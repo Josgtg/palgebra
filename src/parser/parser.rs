@@ -1,6 +1,7 @@
 use crate::token::Token;
 use crate::errors;
 use std::collections::HashSet;
+
 pub struct Parser {
     sentences: HashSet<char>,
     token_list: Vec<Token>,
@@ -12,11 +13,11 @@ impl Parser {
         Parser {
             sentences: HashSet::new(),
             token_list: Vec::new(),
-            idx: 0
+            idx: 1
         }
     }
 
-    pub fn parse(&mut self, expression: String) -> Vec<Token> {
+    pub fn scan(&mut self, expression: String) -> Vec<Token> {
         for c in expression.chars() {
             if self.ignore(c) {
                 self.idx += 1;

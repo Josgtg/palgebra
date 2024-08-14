@@ -26,7 +26,7 @@ fn main() {
     welcome();
     let expression = read_expression();
     let mut parser = Parser::new();
-    let tokens = parser.parse(expression);
+    let tokens = parser.scan(expression);
     println!("{:?}", tokens);
     let tokens: Vec<char> = tokens.into_iter().map(|x| x.to_char()).collect();
     println!("{}", tokens.into_iter().collect::<String>());
