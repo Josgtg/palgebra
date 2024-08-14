@@ -6,7 +6,8 @@ mod errors;
 
 fn welcome() {
     let mut message: String = String::new();
-    message += "Propositional algebra parser. Write an expression and it will be parsed to know if it is a well formed formula.\n";
+    message += "Propositional algebra evaluator\n";
+    message += "Write a proposition and it will be evaluated to know if it is a well formed formula.\n";
     message += "Symbol list:\n";
     message += "and: &\nor: |\nnot: !\nif and only if: ~\nif, then: >\n";
     message += "Any alphabetical letter will be interpreted as a statement\n";
