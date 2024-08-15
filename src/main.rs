@@ -22,7 +22,7 @@ fn welcome() {
 
 fn read_expression() -> String {
     let mut expression = String::new();
-    io::stdin().read_line(&mut expression).expect("Failed to read line. Restart the program and try again");
+    io::stdin().lock().read_line(&mut expression).expect("Failed to read line. Restart the program and try again");
     expression
 }
 
