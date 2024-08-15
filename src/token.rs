@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Token {
     And,
     Or,
@@ -7,11 +7,12 @@ pub enum Token {
     IfThen,
     LeftParen,
     RightParen,
-    Sentence(char)
+    Sentence(char),
+    Null
 }
 
 impl Token {
-    pub fn to_char(&self) -> char {
+    pub fn as_char(&self) -> char {
         match self {
             Token::And => '&',
             Token::Or => '|',
@@ -20,7 +21,8 @@ impl Token {
             Token::IfThen => '>',
             Token::LeftParen => '(',
             Token::RightParen => ')',
-            Token::Sentence(c) => *c
+            Token::Sentence(c) => *c,
+            Token::Null => '\0',
         }
     }
 }

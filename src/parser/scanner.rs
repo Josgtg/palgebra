@@ -25,6 +25,7 @@ fn match_token(c: char, parser: &mut Parser, index: u32) {
         ')' => parser.tokens.push(Token::RightParen),
         _ => {
             if !c.is_alphabetic() {
+                parser.error = true;
                 errors::report(&format!("unexpected character \"{}\"", c), 0, index);
                 return
             }
