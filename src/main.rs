@@ -1,6 +1,6 @@
 #![allow(warnings)]
 
-use std::io;
+use std::io::{self, BufRead};
 mod parser;
 use parser::Parser;
 mod token;
@@ -22,7 +22,8 @@ fn welcome() {
 
 fn read_expression() -> String {
     let mut expression = String::new();
-    io::stdin().lock().read_line(&mut expression).expect("Failed to read line. Restart the program and try again");
+    let stdin = io::stdin();
+    stdin.lock().read_line(&mut expression).expect("Failed to read line. Restart the program and try again");
     expression
 }
 
