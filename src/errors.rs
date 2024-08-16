@@ -1,7 +1,7 @@
 fn get_err_message(code: u32) -> String {
     match code {
-        0 => String::from("Syntax error"),
-        _ => String::from("Parse error")
+        0 => String::from("SyntaxError"),
+        _ => String::from("ParseError")
     }
 }
 

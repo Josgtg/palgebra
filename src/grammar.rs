@@ -7,6 +7,7 @@ pub enum Expr {
     Operation(Token),
     Binary(Box<Expr>, Token, Box<Expr>),
     Unary(Token, Box<Expr>),
+    InvalidToken,
     Null,
 }
 
@@ -17,6 +18,7 @@ pub fn interpret(expr: Box<Expr>) -> Box<Expr> {
         Expr::Operation(op) => operation(op),
         Expr::Binary(left, op, right) => binary(left, op, right),
         Expr::Unary(op, right) => unary(op, right),
+        Expr::InvalidToken => Expr::InvalidToken,
         Expr::Null => Expr::Null
     };
     Box::new(new_expr)

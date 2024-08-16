@@ -8,6 +8,7 @@ pub enum Token {
     LeftParen,
     RightParen,
     Sentence(char),
+    Invalid,
     Null
 }
 
@@ -22,7 +23,7 @@ impl Token {
             Token::LeftParen => '(',
             Token::RightParen => ')',
             Token::Sentence(c) => *c,
-            Token::Null => '\0',
+            Token::Invalid | Token::Null => '\0',
         }
     }
 }

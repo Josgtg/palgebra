@@ -24,7 +24,6 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
-        if self.error { return Err(()) }
         let expr = self.expression();
         if self.error {
             return Err(());
@@ -39,8 +38,15 @@ impl Parser {
         if self.is_at_end() {
             return expr;
         }
-        if *expr == Expr::Null {
+        if *expr == Expr::InvalidToken {
+            self.synchronize();
+            expr = self.expression();
+        }
+        if let Expr::Operation(_) = *expr  {
             self.error("missing expression on left side of operand");
+        } 
+        if *expr == Expr::Null {
+            self.error("")
         }
 
         let mut op: Token;
@@ -52,60 +58,17 @@ impl Parser {
                 self.error("missing expression on right side of operand");
                 continue;
             }
-            expr = Box::new(Expr::Binary(expr, op, right));
-        }
-
-        match self.peek() {
-            Token::Sentence(_) => {
-                self.error("sentence is in an invalid position");
-                expr = self.expression();
-            }
-            Token::Not => {
-                self.error("not operand is in an invalid position");
-                expr = self.expression();
-            }
-            Token::RightParen => {
-                self.error("parenthesis is in an invalid position");
-                expr = self.expression();
-            }
-            _ => ()
-        };
-
-        expr
-    }
-
-    fn group_expression(&mut self) -> Box<Expr> {
-        let mut expr = self.unary();
-        if self.is_at_end() {
-            return expr;
-        }
-        if *expr == Expr::Null {
-            self.error("missing expression on left side of operand");
-        }
-
-        let mut op: Token;
-        let mut right: Box<Expr>;
-        while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
-            op = self.previous_owned();
-            right = self.unary();
-            if *right == Expr::Null {
-                self.error("missing expression on right side of operand");
+            if let Expr::Operation(_) = *right {
+                self.error("operators are next to each other");
                 continue;
             }
             expr = Box::new(Expr::Binary(expr, op, right));
         }
 
-        match self.peek() {
-            Token::Sentence(_) => {
-                self.error("sentence is in an invalid position");
-                expr = self.expression();
-            }
-            Token::Not => {
-                self.error("not operand is in an invalid position");
-                expr = self.expression();
-            }
-            _ => ()
-        };
+        if let Token::Sentence(_) = self.peek() {
+            self.error("sentence is in an invalid position");
+            expr = self.expression();
+        }
 
         expr
     }
@@ -124,7 +87,7 @@ impl Parser {
 
     fn primary(&mut self) -> Box<Expr> {
         if self.match_token(Token::LeftParen) {
-            let expr = self.group_expression();
+            let expr = self.expression();
             self.expect(Token::RightParen, "expected closing parenthesis");
             return Box::new(Expr::Grouping(expr));
         }
@@ -139,9 +102,12 @@ impl Parser {
             return self.expression();
         }
 
-        if token != &Token::Not && token != &Token::Null {
-            self.error("operators are next to each other");
-            return self.expression();
+        if self.is_operator(self.peek()) {
+            return Box::new(Expr::Operation(self.advance_owned()));
+        }
+
+        if self.peek() == &Token::Invalid {
+            return Box::new(Expr::InvalidToken);
         }
         
         Box::new(Expr::Null)
@@ -218,6 +184,10 @@ impl Parser {
         }
         self.advance();
         true
+    }
+
+    fn is_operator(&self, token: &Token) -> bool {
+        token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen
     }
 
     fn synchronize(&mut self) {
