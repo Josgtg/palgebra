@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 use crate::token::Token;
 use crate::grammar::Expr;
 

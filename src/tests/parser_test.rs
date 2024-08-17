@@ -1,7 +1,6 @@
 #[cfg(test)]
 
 mod tests {
-    use super::*;
     use crate::parse;
     use crate::ast_printer::print;
     use crate::grammar::Expr;

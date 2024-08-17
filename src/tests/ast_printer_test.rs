@@ -1,10 +1,9 @@
 #[cfg(test)]
 
-use crate::grammar::Expr;
-use crate::token::Token;
-use crate::ast_printer::print;
 mod tests {
-    use super::*;
+    use crate::grammar::Expr;
+    use crate::token::Token;
+    use crate::ast_printer::print;
 
     #[test]
     fn first() {

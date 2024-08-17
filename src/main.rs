@@ -1,4 +1,4 @@
-#![allow(warnings)]
+// #![allow(warnings)]
 
 mod tests;
 
@@ -43,8 +43,7 @@ fn main() {
     let res = parse(&expression);
     println!();
 
-    if let Ok(expr) = res {
-        println!("{}", ast_printer::print(expr));
+    if let Ok(_) = res {
         println!("Good! The proposition is a WFF");
     } else {
         println!("The proposition has errors; is not a WFF");

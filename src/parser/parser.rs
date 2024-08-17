@@ -1,7 +1,7 @@
 // use std::{collections::HashSet};
 
 use super::scanner;
-use crate::{ast_printer, errors, grammar::Expr, token::Token};
+use crate::{errors, grammar::Expr, token::Token};
 
 fn is_operator_token(token: &Token) -> bool {
     token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen || token == &Token::Not
