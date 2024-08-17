@@ -36,6 +36,7 @@ pub fn parse(proposition: &str) -> Result<Box<Expr>, ()> {
     // parser.print_tokens();
     parser.parse()
 }
+
 fn main() {
     welcome();
 
