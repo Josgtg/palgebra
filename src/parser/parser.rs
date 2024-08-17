@@ -23,7 +23,7 @@ impl Parser {
         }
     }
 
-    pub fn scan(&mut self, proposition: String) {
+    pub fn scan(&mut self, proposition: &str) {
        scanner::scan(self, proposition);
     }
 
@@ -60,6 +60,11 @@ impl Parser {
         if *expr == Expr::Null {
             self.error("not an expression");
             return Box::new(Expr::Null);
+        }
+
+        if let Expr::Symbol(_) = *expr {
+            self.error("closing parenthesis does not have a match");
+            expr = self.expression();
         }
 
         let mut op: Token;
@@ -134,6 +139,10 @@ impl Parser {
 
         if self.peek() == &Token::Invalid {
             return Box::new(Expr::Invalid);
+        }
+
+        if self.peek() == &Token::RightParen {
+            return Box::new(Expr::Symbol(Token::RightParen));
         }
         
         Box::new(Expr::Null)
@@ -219,10 +228,14 @@ impl Parser {
     fn synchronize(&mut self) {
         while !self.is_at_end() {
             if let Token::Sentence(_) = self.peek() {
+                self.start_idx = self.idx;
                 return
             } else if self.peek() == &Token::LeftParen {
+                self.start_idx = self.idx;
                 return
             } else if self.peek() == &Token::RightParen {
+                self.advance();
+                self.start_idx = self.idx;
                 return
             }
             self.advance();

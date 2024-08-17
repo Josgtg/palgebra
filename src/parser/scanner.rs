@@ -2,7 +2,7 @@ use super::Parser;
 use crate::token::Token;
 use crate::errors;
 
-pub fn scan(parser: &mut Parser, proposition: String) {
+pub fn scan(parser: &mut Parser, proposition: &str) {
     let mut index: u32 = 1;
     for c in proposition.chars() {
         if ignore(c) {

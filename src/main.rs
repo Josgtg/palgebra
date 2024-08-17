@@ -1,5 +1,7 @@
 #![allow(warnings)]
 
+mod tests;
+
 use std::io::{self, BufRead};
 mod parser;
 use parser::Parser;
@@ -28,7 +30,7 @@ fn read_expression() -> String {
     expression
 }
 
-pub fn parse(proposition: String) -> Result<Box<Expr>, ()> {
+pub fn parse(proposition: &str) -> Result<Box<Expr>, ()> {
     let mut parser = Parser::new();
     parser.scan(proposition);
     // parser.print_tokens();
@@ -38,7 +40,7 @@ fn main() {
     welcome();
 
     let expression = read_expression();
-    let res = parse(expression);
+    let res = parse(&expression);
     println!();
 
     if let Ok(expr) = res {
