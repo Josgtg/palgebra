@@ -37,7 +37,7 @@ impl Parser {
 
         while !self.is_at_end() {
             self.error = true;
-            let proposition = self.proposition();
+            let _ = self.proposition();
         }
 
         if self.error { Err(()) }
@@ -110,7 +110,7 @@ impl Parser {
         self.start_idx = self.idx;
 
         if self.match_token(Token::Not) {
-            let mut right = self.proposition();
+            let right = self.proposition();
             if right == Expr::Null {
                 self.error("missing proposition on right side of negation");
                 return Expr::Null;
@@ -178,30 +178,6 @@ impl Parser {
         false
     }
 
-    fn expect(&mut self, to_compare: Token, fail_message: &str) -> bool {
-        if self.is_at_end() {
-            self.error(&format!("{}, but proposition finished", fail_message));
-            return false;
-        }
-        if self.peek() != &to_compare {
-            self.error(fail_message);
-            return false;
-        }
-        self.advance();
-        true
-    }
-
-    fn close_parenthesis(&mut self, error: &str) -> bool {
-        if self.match_token(Token::RightParen) {
-            if self.open_parenthesis > 0 {
-                self.open_parenthesis -= 1;
-                return true;
-            }
-        }
-        self.manual_error(error, 0, self.idx);
-        false
-    }
-
     // Error handling
 
     fn error(&mut self, message: &str) {
@@ -237,10 +213,6 @@ impl Parser {
     }
 
     // Token consuming
-    
-    fn previous(&self) -> &Token {
-        &self.tokens[self.idx - 1]
-    }
 
     fn previous_owned(&self) -> Token {
         self.tokens[self.idx - 1].clone()
@@ -251,13 +223,6 @@ impl Parser {
             return &Token::Null;
         }
         &self.tokens[self.idx]
-    }
-
-    fn peek_owned(&self) -> Token {
-        if self.is_at_end() {
-            return Token::Null;
-        }
-        self.tokens[self.idx].clone()
     }
 
     fn advance(&mut self) -> &Token {
@@ -274,29 +239,5 @@ impl Parser {
         }
         self.idx += 1;
         self.tokens[self.idx - 1].clone()
-    }
-
-    fn next(&mut self) -> &Token {
-        self.idx += 1;
-        if self.is_at_end() {
-            return &Token::Null;
-        }
-        self.idx -= 1;
-        &self.tokens[self.idx + 1]
-    }
-
-    fn next_owned(&mut self) -> Token {
-        self.idx += 1;
-        if self.is_at_end() {
-            return Token::Null;
-        }
-        self.idx -= 1;
-        self.tokens[self.idx + 1].clone()
-    }
-
-    // Debugging
-
-    pub fn print_tokens(&self) {
-        println!("{:?}", self.tokens);
     }
 }
