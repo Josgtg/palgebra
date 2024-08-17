@@ -1,11 +1,17 @@
-use std::{collections::HashSet};
+// use std::{collections::HashSet};
 
 use super::scanner;
 use crate::{ast_printer, errors, grammar::Expr, token::Token};
+
+fn is_operator_token(token: &Token) -> bool {
+    token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen
+}
+
 pub struct Parser {
-    pub sentences: HashSet<char>,
+    // pub sentences: HashSet<char>,
     pub tokens: Vec<Token>,
     pub error: bool,
+    open_parenthesis: u32,
     start_idx: usize,
     idx: usize
 }
@@ -13,9 +19,10 @@ pub struct Parser {
 impl Parser {
     pub fn new() -> Self {
         Parser {
-            sentences: HashSet::new(),
+            // sentences: HashSet::new(),
             tokens: Vec::new(),
             error: false,
+            open_parenthesis: 0,
             start_idx: 0,
             idx: 0
         }
@@ -27,10 +34,12 @@ impl Parser {
 
     pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
         let proposition = self.proposition();
+
         if !self.is_at_end() {
             self.error = true;
             let proposition = self.proposition();
         }
+
         if self.error { Err(()) }
         else { Ok(Box::new(proposition)) }
     }
@@ -42,9 +51,31 @@ impl Parser {
         let mut proposition = self.unary();
 
         while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
+            if proposition == Expr::Null {
+                self.error("missing expression on left side of operation");
+                continue;
+            }
+
             self.start_idx = self.idx;
+
             let operator = self.previous_owned();
             let rigth = self.unary();
+
+            if rigth == Expr::Null {
+                if is_operator_token(self.peek()) {
+                    self.error("operators are next to each other");
+                    continue;
+                }
+
+                if self.peek() == &Token::RightParen {
+                    self.error("closing parenthesis does not have a match");
+                    continue;
+                }
+
+                self.error("missing expression on right side of operation");
+                continue;
+            }
+
             proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
         }
 
@@ -66,12 +97,17 @@ impl Parser {
         self.start_idx = self.idx;
 
         if self.match_token(Token::LeftParen) {
+            self.open_parenthesis += 1;
             let proposition = self.proposition();
-            self.expect(Token::RightParen, "expected closing parenthesis");
+            self.close_parenthesis("expected closing parenthesis");
             return Expr::Grouping(Box::new(proposition))
         }
 
-        Expr::Literal(self.advance_owned())
+        if let Token::Sentence(_) = self.peek() {
+            Expr::Literal(self.advance_owned())
+        } else {
+            Expr::Null
+        }
     }
 
     // Token consuming
@@ -99,18 +135,18 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        self.idx += 1;
         if self.is_at_end() {
             return &Token::Null;
         }
+        self.idx += 1;
         &self.tokens[self.idx - 1]
     }
 
     fn advance_owned(&mut self) -> Token {
-        self.idx += 1;
         if self.is_at_end() {
             return Token::Null;
         }
+        self.idx += 1;
         self.tokens[self.idx - 1].clone()
     }
 
@@ -168,11 +204,27 @@ impl Parser {
         true
     }
 
+    fn close_parenthesis(&mut self, error: &str) -> bool {
+        if self.match_token(Token::RightParen) {
+            self.open_parenthesis -= 1;
+            true
+        } else {
+            self.error_with_idx(error, self.idx);
+            false
+        }
+    }
+
     // Error handling
 
     fn error(&mut self, message: &str) {
         self.error = true;
-        errors::report(message, 1, self.start_idx as u32);
+        errors::report(message, 1, (self.start_idx + 1) as u32);
+        self.synchronize();
+    }
+
+    fn error_with_idx(&mut self, message: &str, idx: usize) {
+        self.error = true;
+        errors::report(message, 1, (idx + 1) as u32);
         self.synchronize();
     }
 
@@ -184,12 +236,13 @@ impl Parser {
         */
         while !self.is_at_end() {
             if let Token::Sentence(_) = self.peek() {
-                self.start_idx = self.idx;
                 return
             }
             if self.peek() == &Token::LeftParen {
-                self.start_idx = self.idx;
                 return
+            }
+            if self.peek() == &Token::LeftParen {
+                self.close_parenthesis("closing parenthesis does not have a match");
             }
             self.advance();
         }

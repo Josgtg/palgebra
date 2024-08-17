@@ -30,8 +30,8 @@ fn match_token(c: char, parser: &mut Parser, index: u32) {
                 parser.tokens.push(Token::Invalid);
                 return
             }
-            parser.sentences.insert(c);
-            parser.tokens.push(Token::Sentence(c))
+            // parser.sentences.insert(c);
+            parser.tokens.push(Token::Sentence(c));
         }
     }
 }
