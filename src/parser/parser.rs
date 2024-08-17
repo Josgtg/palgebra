@@ -6,7 +6,6 @@ pub struct Parser {
     pub sentences: HashSet<char>,
     pub tokens: Vec<Token>,
     pub error: bool,
-    op_next_to_each_other_err: bool,
     start_idx: usize,
     idx: usize
 }
@@ -17,7 +16,6 @@ impl Parser {
             sentences: HashSet::new(),
             tokens: Vec::new(),
             error: false,
-            op_next_to_each_other_err: false,
             start_idx: 0,
             idx: 0
         }
@@ -28,132 +26,56 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
-        let mut expr = self.expression();
+        let proposition = self.proposition();
         if !self.is_at_end() {
             self.error = true;
-            expr = self.expression();
+            let proposition = self.proposition();
         }
-        if self.error {
-            return Err(());
-        }
-        Ok(expr)
+        if self.error { Err(()) }
+        else { Ok(Box::new(proposition)) }
     }
 
-    // Actual parsing
+    // Building the tree
 
-    fn expression(&mut self) -> Box<Expr> {
-        let mut expr = self.unary();
-        if self.is_at_end() {
-            return expr;
-        }
+    fn proposition(&mut self, )  -> Expr {
+        self.start_idx = self.idx;
+        let mut proposition = self.unary();
 
-        if *expr == Expr::Invalid {
-            self.synchronize();
-            expr = self.expression();
-        }
-
-        if let Expr::Operation(_) = *expr  {
-            self.error("missing expression on left side of operand");
-            expr = self.expression();
-        }
-
-        if *expr == Expr::Null {
-            self.error("not an expression");
-            return Box::new(Expr::Null);
-        }
-
-        if let Expr::Symbol(_) = *expr {
-            self.error("closing parenthesis does not have a match");
-            expr = self.expression();
-        }
-
-        let mut op: Token;
-        let mut right: Box<Expr>;
         while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
-            self.op_next_to_each_other_err = false;
             self.start_idx = self.idx;
-            op = self.previous_owned();
-            right = self.unary();
-            if *right == Expr::Null {
-                self.error("missing expression on right side of operand");
-                continue;
-            }
-            if let Expr::Operation(_) = *right {
-                self.op_next_to_each_other_err = true;
-                self.error("operators are next to each other");
-                continue;
-            }
-            expr = Box::new(Expr::Binary(expr, op, right));
+            let operator = self.previous_owned();
+            let rigth = self.unary();
+            proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
         }
+
+        proposition
+    }
+
+    fn unary(&mut self) -> Expr {
         self.start_idx = self.idx;
 
-        if let Token::Sentence(_) = self.peek() {
-            if !self.op_next_to_each_other_err {
-                self.error("sentence is in an invalid position");
-                expr = self.expression();
-            }
-            // We can reset the expression because it has errors. It's no longer being interpreted anyways
-        }
-
-        if self.peek() == &Token::Not {
-            self.error("not operator is in an invalid position");
-            expr = self.expression();
-        }
-
-        expr
-    }
-
-    fn unary(&mut self) -> Box<Expr> {
         if self.match_token(Token::Not) {
-            let op = self.previous_owned();
-            let right = self.unary();
-            if *right == Expr::Null {
-                self.error("missing expression on right side of negation");
-            }
-            return Box::new(Expr::Unary(op, right))
+            let right = self.proposition();
+            return Expr::Unary(Token::Not, Box::new(right));
         }
+
         self.primary()
     }
 
-    fn primary(&mut self) -> Box<Expr> {
+    fn primary(&mut self) -> Expr {
+        self.start_idx = self.idx;
+
         if self.match_token(Token::LeftParen) {
-            let expr = self.expression();
+            let proposition = self.proposition();
             self.expect(Token::RightParen, "expected closing parenthesis");
-            if let Expr::Operation(_) = *expr {
-                return Box::new(Expr::Null);
-            }
-            if *expr == Expr::Null {
-                return Box::new(*expr);
-            }
-            return Box::new(Expr::Grouping(expr));
+            return Expr::Grouping(Box::new(proposition))
         }
 
-        let token = self.peek();
-        if let Token::Sentence(c) = token {
-            return Box::new(Expr::Literal(self.advance_owned()));
-        }
-
-        if self.is_operator(self.peek()) {
-            return Box::new(Expr::Operation(self.advance_owned()));
-        }
-
-        if self.peek() == &Token::Invalid {
-            return Box::new(Expr::Invalid);
-        }
-
-        if self.peek() == &Token::RightParen {
-            return Box::new(Expr::Symbol(Token::RightParen));
-        }
-        
-        Box::new(Expr::Null)
+        Expr::Literal(self.advance_owned())
     }
 
-    // Help
+    // Token consuming
     
-    fn is_at_end(&self) -> bool {
-        self.idx >= self.tokens.len()
-    }
-
     fn previous(&self) -> &Token {
         &self.tokens[self.idx - 1]
     }
@@ -164,73 +86,108 @@ impl Parser {
 
     fn peek(&self) -> &Token {
         if self.is_at_end() {
-            return &Token::Null
+            return &Token::Null;
         }
         &self.tokens[self.idx]
     }
 
+    fn peek_owned(&self) -> Token {
+        if self.is_at_end() {
+            return Token::Null;
+        }
+        self.tokens[self.idx].clone()
+    }
+
     fn advance(&mut self) -> &Token {
+        self.idx += 1;
         if self.is_at_end() {
             return &Token::Null;
         }
-        self.idx += 1;
         &self.tokens[self.idx - 1]
     }
 
     fn advance_owned(&mut self) -> Token {
+        self.idx += 1;
         if self.is_at_end() {
             return Token::Null;
         }
-        self.idx += 1;
         self.tokens[self.idx - 1].clone()
     }
 
-    fn match_token(&mut self, t: Token) -> bool {
-        if self.peek() == &t {
+    fn next(&mut self) -> &Token {
+        self.idx += 1;
+        if self.is_at_end() {
+            return &Token::Null;
+        }
+        self.idx -= 1;
+        &self.tokens[self.idx + 1]
+    }
+
+    fn next_owned(&mut self) -> Token {
+        self.idx += 1;
+        if self.is_at_end() {
+            return Token::Null;
+        }
+        self.idx -= 1;
+        self.tokens[self.idx + 1].clone()
+    }
+
+    // Help
+    
+    fn is_at_end(&self) -> bool {
+        self.idx >= self.tokens.len()
+    }
+
+    fn match_token(&mut self, token: Token) -> bool {
+        if self.peek() == &token {
             self.advance();
-            return true
+            return true;
         }
         false
     }
 
     fn match_tokens(&mut self, tokens: Vec<Token>) -> bool {
-        for t in tokens {
-            if self.peek() == &t {
-                self.advance();
-                return true
+        for token in tokens {
+            if self.match_token(token) {
+                return true;
             }
         }
         false
     }
 
-    fn error(&mut self, message: &str) {
-        errors::report(message, 1, (self.start_idx + 1) as u32);
-        self.error = true;
-        self.synchronize();
-    }
-
-    fn expect(&mut self, to_match: Token, failure_message: &str) -> bool {
+    fn expect(&mut self, to_compare: Token, fail_message: &str) -> bool {
         if self.is_at_end() {
-            self.error(&(String::from(failure_message) + ", but proposition finished"));
+            self.error(&format!("{}, but proposition finished", fail_message));
             return false;
-        } else if self.peek() != &to_match {
-            self.error(&format!("{}, got \"{}\"", failure_message, self.peek().as_char()));
+        }
+        if self.peek() != &to_compare {
+            self.error(fail_message);
             return false;
         }
         self.advance();
         true
     }
 
-    fn is_operator(&self, token: &Token) -> bool {
-        token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen
+    // Error handling
+
+    fn error(&mut self, message: &str) {
+        self.error = true;
+        errors::report(message, 1, self.start_idx as u32);
+        self.synchronize();
     }
 
     fn synchronize(&mut self) {
+        /*
+        When there is an error, we need to get to a point where we can continue catching
+        errors without being affected by the previous ones. That point is either in a new sentence
+        or a left prenthesis.
+        */
         while !self.is_at_end() {
             if let Token::Sentence(_) = self.peek() {
                 self.start_idx = self.idx;
                 return
-            } else if self.peek() == &Token::LeftParen {
+            }
+            if self.peek() == &Token::LeftParen {
                 self.start_idx = self.idx;
                 return
             }
