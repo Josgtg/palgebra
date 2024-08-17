@@ -6,6 +6,8 @@ pub struct Parser {
     pub sentences: HashSet<char>,
     pub tokens: Vec<Token>,
     pub error: bool,
+    op_next_to_each_other_err: bool,
+    start_idx: usize,
     idx: usize
 }
 
@@ -15,6 +17,8 @@ impl Parser {
             sentences: HashSet::new(),
             tokens: Vec::new(),
             error: false,
+            op_next_to_each_other_err: false,
+            start_idx: 0,
             idx: 0
         }
     }
@@ -24,7 +28,11 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
-        let expr = self.expression();
+        let mut expr = self.expression();
+        if !self.is_at_end() {
+            self.error = true;
+            expr = self.expression();
+        }
         if self.error {
             return Err(());
         }
@@ -38,20 +46,27 @@ impl Parser {
         if self.is_at_end() {
             return expr;
         }
-        if *expr == Expr::InvalidToken {
+
+        if *expr == Expr::Invalid {
             self.synchronize();
             expr = self.expression();
         }
+
         if let Expr::Operation(_) = *expr  {
             self.error("missing expression on left side of operand");
-        } 
+            expr = self.expression();
+        }
+
         if *expr == Expr::Null {
-            self.error("")
+            self.error("not an expression");
+            return Box::new(Expr::Null);
         }
 
         let mut op: Token;
         let mut right: Box<Expr>;
         while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
+            self.op_next_to_each_other_err = false;
+            self.start_idx = self.idx;
             op = self.previous_owned();
             right = self.unary();
             if *right == Expr::Null {
@@ -59,14 +74,24 @@ impl Parser {
                 continue;
             }
             if let Expr::Operation(_) = *right {
+                self.op_next_to_each_other_err = true;
                 self.error("operators are next to each other");
                 continue;
             }
             expr = Box::new(Expr::Binary(expr, op, right));
         }
+        self.start_idx = self.idx;
 
         if let Token::Sentence(_) = self.peek() {
-            self.error("sentence is in an invalid position");
+            if !self.op_next_to_each_other_err {
+                self.error("sentence is in an invalid position");
+                expr = self.expression();
+            }
+            // We can reset the expression because it has errors. It's no longer being interpreted anyways
+        }
+
+        if self.peek() == &Token::Not {
+            self.error("not operator is in an invalid position");
             expr = self.expression();
         }
 
@@ -89,6 +114,12 @@ impl Parser {
         if self.match_token(Token::LeftParen) {
             let expr = self.expression();
             self.expect(Token::RightParen, "expected closing parenthesis");
+            if let Expr::Operation(_) = *expr {
+                return Box::new(Expr::Null);
+            }
+            if *expr == Expr::Null {
+                return Box::new(*expr);
+            }
             return Box::new(Expr::Grouping(expr));
         }
 
@@ -96,18 +127,13 @@ impl Parser {
         if let Token::Sentence(c) = token {
             return Box::new(Expr::Literal(self.advance_owned()));
         }
-        
-        if token == &Token::RightParen {
-            self.error("closing parenthesis does not have a match");
-            return self.expression();
-        }
 
         if self.is_operator(self.peek()) {
             return Box::new(Expr::Operation(self.advance_owned()));
         }
 
         if self.peek() == &Token::Invalid {
-            return Box::new(Expr::InvalidToken);
+            return Box::new(Expr::Invalid);
         }
         
         Box::new(Expr::Null)
@@ -169,7 +195,7 @@ impl Parser {
     }
 
     fn error(&mut self, message: &str) {
-        errors::report(message, 1, (self.idx + 1) as u32);
+        errors::report(message, 1, (self.start_idx + 1) as u32);
         self.error = true;
         self.synchronize();
     }
@@ -195,6 +221,8 @@ impl Parser {
             if let Token::Sentence(_) = self.peek() {
                 return
             } else if self.peek() == &Token::LeftParen {
+                return
+            } else if self.peek() == &Token::RightParen {
                 return
             }
             self.advance();

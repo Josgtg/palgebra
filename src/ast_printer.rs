@@ -28,7 +28,7 @@ fn as_str(expr: Box<Expr>) -> String {
         Expr::Binary(left, op, right) => binary(left, op, right),
         Expr::Unary(op, right) => unary(op, right),
         Expr::Operation(op) => literal(op),
-        Expr::InvalidToken | Expr::Null => String::new()
+        Expr::Invalid | Expr::Null => String::new()
     }
 }
 

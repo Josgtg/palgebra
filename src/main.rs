@@ -6,6 +6,7 @@ use parser::Parser;
 mod token;
 mod errors;
 mod grammar;
+use grammar::Expr;
 mod ast_printer;
 
 fn welcome() {
@@ -27,15 +28,22 @@ fn read_expression() -> String {
     expression
 }
 
+pub fn parse(proposition: String) -> Result<Box<Expr>, ()> {
+    let mut parser = Parser::new();
+    parser.scan(proposition);
+    // parser.print_tokens();
+    parser.parse()
+}
 fn main() {
     welcome();
+
     let expression = read_expression();
-    let mut parser = Parser::new();
-    parser.scan(expression);
-    // parser.print_tokens();
-    if let Ok(expr) = parser.parse() {
+    let res = parse(expression);
+    println!();
+
+    if let Ok(expr) = res {
         println!("{}", ast_printer::print(expr));
-        println!("The proposition is a WFF");
+        println!("Good! The proposition is a WFF");
     } else {
         println!("The proposition has errors; is not a WFF");
     }
