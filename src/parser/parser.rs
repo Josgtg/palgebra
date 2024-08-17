@@ -233,10 +233,6 @@ impl Parser {
             } else if self.peek() == &Token::LeftParen {
                 self.start_idx = self.idx;
                 return
-            } else if self.peek() == &Token::RightParen {
-                self.advance();
-                self.start_idx = self.idx;
-                return
             }
             self.advance();
         }

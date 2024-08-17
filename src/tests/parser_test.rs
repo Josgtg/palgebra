@@ -99,4 +99,14 @@ mod tests {
     fn nonsense_parenthesis() {
         assert_err("p &)(()) s  ))| !)s) | (t!!");
     }
+
+    #[test]
+    fn complicated_correct() {
+        assert_ok("(p > ((!y & !s) | !(k ~ a)) > (o ~ (!p | p))) ~ l")
+    }
+
+    #[test]
+    fn complicated_incorrect() {
+        assert_err("(p > ((! & !s) | !(k ~ a)) > (~ (!p | p))) ~ l")
+    }
 }
