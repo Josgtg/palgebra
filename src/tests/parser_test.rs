@@ -11,6 +11,7 @@ mod tests {
     }
 
     fn assert_ok(proposition: &str) {
+        println!("{}", proposition);
         let expr = parse(proposition);
         if let Err(_) = expr {
             panic!();
@@ -19,6 +20,7 @@ mod tests {
     }
 
     fn assert_err(proposition: &str) {
+        println!("{}", proposition);
         if let Ok(expr) = parse(proposition) {
             debug(expr);
             panic!();
@@ -48,6 +50,11 @@ mod tests {
     #[test]
     fn five() {
         assert_ok("p & q | s ~ t > m");
+    }
+
+    #[test]
+    fn little_groups() {
+        assert_ok("p & (q | s)");
     }
 
     #[test]
@@ -101,6 +108,16 @@ mod tests {
     }
 
     #[test]
+    fn missing_left_side_in_group() {
+        assert_err("(p | s) > (~ (p & q))");
+    }
+
+    #[test] 
+    fn empty_groups() {
+        assert_err("p & (()) s & q");
+    }
+    
+    #[test]
     fn complicated_correct() {
         assert_ok("(p > ((!y & !s) | !(k ~ a)) > (o ~ (!p | p))) ~ l")
     }
@@ -108,5 +125,10 @@ mod tests {
     #[test]
     fn complicated_incorrect() {
         assert_err("(p > ((! & !s) | !(k ~ a)) > (~ (!p | p))) ~ l")
+    }
+
+    #[test]
+    fn incoherent_negation() {
+        assert_err("t !!! q && q")
     }
 }

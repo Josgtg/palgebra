@@ -4,7 +4,7 @@ use super::scanner;
 use crate::{ast_printer, errors, grammar::Expr, token::Token};
 
 fn is_operator_token(token: &Token) -> bool {
-    token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen
+    token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen || token == &Token::Not
 }
 
 pub struct Parser {
@@ -35,7 +35,7 @@ impl Parser {
     pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
         let proposition = self.proposition();
 
-        if !self.is_at_end() {
+        while !self.is_at_end() {
             self.error = true;
             let proposition = self.proposition();
         }
@@ -52,13 +52,14 @@ impl Parser {
 
         while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
             if proposition == Expr::Null {
-                self.error("missing expression on left side of operation");
+                self.error("missing proposition on left side of operation");
                 continue;
             }
 
             self.start_idx = self.idx;
-
+            
             let operator = self.previous_owned();
+
             let rigth = self.unary();
 
             if rigth == Expr::Null {
@@ -68,15 +69,31 @@ impl Parser {
                 }
 
                 if self.peek() == &Token::RightParen {
-                    self.error("closing parenthesis does not have a match");
-                    continue;
+                    if self.open_parenthesis > 0 {
+                        self.open_parenthesis -= 1;
+                    } else {
+                        self.error("unmatched closing parenthesis");
+                        continue;
+                    }
                 }
 
-                self.error("missing expression on right side of operation");
+                self.error("missing proposition on right side of operation");
                 continue;
             }
 
             proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
+        }
+
+        if let Token::Sentence(_) = self.peek() {
+            proposition = self.unary();
+        }
+
+        if self.peek() == &Token::Not {
+            self.error_with_idx("not operator is in an invalid position", self.idx);
+        }
+
+        if self.peek() == &Token::LeftParen {
+            proposition = self.unary();
         }
 
         proposition
@@ -86,7 +103,11 @@ impl Parser {
         self.start_idx = self.idx;
 
         if self.match_token(Token::Not) {
-            let right = self.proposition();
+            let mut right = self.proposition();
+            if right == Expr::Null {
+                self.error("missing proposition on right side of negation");
+                return Expr::Null;
+            }
             return Expr::Unary(Token::Not, Box::new(right));
         }
 
@@ -99,14 +120,112 @@ impl Parser {
         if self.match_token(Token::LeftParen) {
             self.open_parenthesis += 1;
             let proposition = self.proposition();
-            self.close_parenthesis("expected closing parenthesis");
+            if self.open_parenthesis > 0 {
+                if self.match_token(Token::RightParen) {
+                    self.open_parenthesis -= 1;
+                } else {
+                    self.error_with_idx("expected closing parenthesis", self.idx);
+                }
+            }
+            if proposition == Expr::Null {
+                if !self.is_at_end() { self.error("not a proposition"); }
+                return Expr::Null;
+            }
             return Expr::Grouping(Box::new(proposition))
         }
 
         if let Token::Sentence(_) = self.peek() {
             Expr::Literal(self.advance_owned())
         } else {
+            if self.match_token(Token::RightParen) {
+                if self.open_parenthesis > 0 {
+                    self.open_parenthesis -= 1;
+                } else {
+                    self.error_with_idx("closing parenthesis does not have a match", self.idx - 1);
+                }
+            }
             Expr::Null
+        }
+    }
+
+    // Help
+    
+    fn is_at_end(&self) -> bool {
+        self.idx >= self.tokens.len()
+    }
+
+    fn match_token(&mut self, token: Token) -> bool {
+        if self.peek() == &token {
+            self.advance();
+            return true;
+        }
+        false
+    }
+
+    fn match_tokens(&mut self, tokens: Vec<Token>) -> bool {
+        for token in tokens {
+            if self.match_token(token) {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn expect(&mut self, to_compare: Token, fail_message: &str) -> bool {
+        if self.is_at_end() {
+            self.error(&format!("{}, but proposition finished", fail_message));
+            return false;
+        }
+        if self.peek() != &to_compare {
+            self.error(fail_message);
+            return false;
+        }
+        self.advance();
+        true
+    }
+
+    fn close_parenthesis(&mut self, error: &str) -> bool {
+        if self.match_token(Token::RightParen) {
+            if self.open_parenthesis > 0 {
+                self.open_parenthesis -= 1;
+                return true;
+            }
+        }
+        self.error_with_idx(error, self.idx);
+        false
+    }
+
+    // Error handling
+
+    fn error(&mut self, message: &str) {
+        self.error = true;
+        errors::report(message, 1, (self.start_idx + 1) as u32);
+        self.synchronize();
+    }
+
+    fn error_with_idx(&mut self, message: &str, idx: usize) {
+        self.error = true;
+        errors::report(message, 1, (idx + 1) as u32);
+        self.synchronize();
+    }
+
+    fn synchronize(&mut self) {
+        /*
+        When there is an error, we need to get to a point where we can continue catching
+        errors without being affected by the previous ones. That point is either in a new sentence
+        or a left prenthesis.
+        */
+        while !self.is_at_end() {
+            if let Token::Sentence(_) = self.peek() {
+                return
+            }
+            if self.peek() == &Token::LeftParen {
+                return
+            }
+            if self.peek() == &Token::RightParen {
+                if self.open_parenthesis > 0 { self.open_parenthesis -= 1; }
+            }
+            self.advance();
         }
     }
 
@@ -166,86 +285,6 @@ impl Parser {
         }
         self.idx -= 1;
         self.tokens[self.idx + 1].clone()
-    }
-
-    // Help
-    
-    fn is_at_end(&self) -> bool {
-        self.idx >= self.tokens.len()
-    }
-
-    fn match_token(&mut self, token: Token) -> bool {
-        if self.peek() == &token {
-            self.advance();
-            return true;
-        }
-        false
-    }
-
-    fn match_tokens(&mut self, tokens: Vec<Token>) -> bool {
-        for token in tokens {
-            if self.match_token(token) {
-                return true;
-            }
-        }
-        false
-    }
-
-    fn expect(&mut self, to_compare: Token, fail_message: &str) -> bool {
-        if self.is_at_end() {
-            self.error(&format!("{}, but proposition finished", fail_message));
-            return false;
-        }
-        if self.peek() != &to_compare {
-            self.error(fail_message);
-            return false;
-        }
-        self.advance();
-        true
-    }
-
-    fn close_parenthesis(&mut self, error: &str) -> bool {
-        if self.match_token(Token::RightParen) {
-            self.open_parenthesis -= 1;
-            true
-        } else {
-            self.error_with_idx(error, self.idx);
-            false
-        }
-    }
-
-    // Error handling
-
-    fn error(&mut self, message: &str) {
-        self.error = true;
-        errors::report(message, 1, (self.start_idx + 1) as u32);
-        self.synchronize();
-    }
-
-    fn error_with_idx(&mut self, message: &str, idx: usize) {
-        self.error = true;
-        errors::report(message, 1, (idx + 1) as u32);
-        self.synchronize();
-    }
-
-    fn synchronize(&mut self) {
-        /*
-        When there is an error, we need to get to a point where we can continue catching
-        errors without being affected by the previous ones. That point is either in a new sentence
-        or a left prenthesis.
-        */
-        while !self.is_at_end() {
-            if let Token::Sentence(_) = self.peek() {
-                return
-            }
-            if self.peek() == &Token::LeftParen {
-                return
-            }
-            if self.peek() == &Token::LeftParen {
-                self.close_parenthesis("closing parenthesis does not have a match");
-            }
-            self.advance();
-        }
     }
 
     // Debugging
