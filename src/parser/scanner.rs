@@ -6,7 +6,6 @@ pub fn scan(parser: &mut Parser, proposition: &str) {
     let mut index: u32 = 1;
     for c in proposition.chars() {
         if ignore(c) {
-            index += 1;
             continue;
         }
         match_token(c, parser, index);

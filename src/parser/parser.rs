@@ -60,7 +60,7 @@ impl Parser {
             
             let operator = self.previous_owned();
 
-            let rigth = self.unary();
+            let mut rigth = self.unary();
 
             if rigth == Expr::Null {
                 if is_operator_token(self.peek()) {
@@ -76,12 +76,19 @@ impl Parser {
                         continue;
                     }
                 }
-
-                self.error("missing proposition on right side of operation");
-                continue;
+                if self.match_token(Token::Invalid) {
+                    rigth = self.unary();
+                } else {
+                    self.error("missing proposition on right side of operation");
+                    continue;
+                }
             }
 
             proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
+        }
+
+        if self.match_token(Token::Invalid) {
+            proposition = self.proposition();
         }
 
         if let Token::Sentence(_) = self.peek() {
@@ -89,7 +96,7 @@ impl Parser {
         }
 
         if self.peek() == &Token::Not {
-            self.error_with_idx("not operator is in an invalid position", self.idx);
+            self.manual_error("not operator is in an invalid position", 0, self.idx);
         }
 
         if self.peek() == &Token::LeftParen {
@@ -124,11 +131,11 @@ impl Parser {
                 if self.match_token(Token::RightParen) {
                     self.open_parenthesis -= 1;
                 } else {
-                    self.error_with_idx("expected closing parenthesis", self.idx);
+                    self.manual_error("expected closing parenthesis", 0, self.idx);
                 }
             }
             if proposition == Expr::Null {
-                if !self.is_at_end() { self.error("not a proposition"); }
+                if !self.is_at_end() { self.manual_error("not a proposition", 1, self.start_idx); }
                 return Expr::Null;
             }
             return Expr::Grouping(Box::new(proposition))
@@ -141,7 +148,7 @@ impl Parser {
                 if self.open_parenthesis > 0 {
                     self.open_parenthesis -= 1;
                 } else {
-                    self.error_with_idx("closing parenthesis does not have a match", self.idx - 1);
+                    self.manual_error("closing parenthesis does not have a match", 0, self.idx - 1);
                 }
             }
             Expr::Null
@@ -191,7 +198,7 @@ impl Parser {
                 return true;
             }
         }
-        self.error_with_idx(error, self.idx);
+        self.manual_error(error, 0, self.idx);
         false
     }
 
@@ -199,13 +206,13 @@ impl Parser {
 
     fn error(&mut self, message: &str) {
         self.error = true;
-        errors::report(message, 1, (self.start_idx + 1) as u32);
+        errors::report(message, 0, (self.start_idx + 1) as u32);
         self.synchronize();
     }
 
-    fn error_with_idx(&mut self, message: &str, idx: usize) {
+    fn manual_error(&mut self, message: &str, code: u32, idx: usize) {
         self.error = true;
-        errors::report(message, 1, (idx + 1) as u32);
+        errors::report(message, code, (idx + 1) as u32);
         self.synchronize();
     }
 

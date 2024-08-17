@@ -38,6 +38,16 @@ mod tests {
     }
 
     #[test]
+    fn binary_missing_left() {
+        assert_err(" & q")
+    }
+
+    #[test]
+    fn binary_missing_right() {
+        assert_err("q &")
+    }
+
+    #[test]
     fn trinary() {
         assert_ok("p & q | s");
     }
@@ -130,5 +140,15 @@ mod tests {
     #[test]
     fn incoherent_negation() {
         assert_err("t !!! q && q")
+    }
+
+    #[test]
+    fn correct_with_unvalid() {
+        assert_err("p & q 99 a | o")
+    }
+
+    #[test]
+    fn incorrect_with_unvalid() {
+        assert_err("p & 9 s || a")
     }
 }
