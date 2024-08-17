@@ -37,7 +37,7 @@ impl Parser {
 
         while !self.is_at_end() {
             self.error = true;
-            let _ = self.proposition();
+            self.proposition();
         }
 
         if self.error { Err(()) }
@@ -87,13 +87,16 @@ impl Parser {
             proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
         }
 
-        if self.match_token(Token::Invalid) {
-            proposition = self.proposition();
+        if let Token::Sentence(_) = self.peek() {
+            if let Token::Sentence(_) = self.previous() {
+                self.manual_error("simple proposition is in an invalid position", 0, self.idx);
+                proposition = self.proposition();
+            }
         }
 
-        if let Token::Sentence(_) = self.peek() {
-            proposition = self.unary();
-        }
+        if self.match_token(Token::Invalid) {
+            proposition = self.proposition();
+        } 
 
         if self.peek() == &Token::Not {
             self.manual_error("not operator is in an invalid position", 0, self.idx);
@@ -213,6 +216,10 @@ impl Parser {
     }
 
     // Token consuming
+
+    fn previous(&self) -> &Token {
+        &self.tokens[self.idx - 1]
+    }
 
     fn previous_owned(&self) -> Token {
         self.tokens[self.idx - 1].clone()

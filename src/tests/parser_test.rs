@@ -47,6 +47,16 @@ mod tests {
     }
 
     #[test]
+    fn just_letters() {
+        assert_err("pappasj & askj")
+    }
+
+    #[test]
+    fn close_letters() {
+        assert_err("pp | q & !qq | (pp)")
+    }
+
+    #[test]
     fn trinary() {
         assert_ok("p & q | s");
     }
