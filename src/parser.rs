@@ -1,5 +1,4 @@
 // use std::{collections::HashSet};
-
 use crate::{errors, grammar::Expr, token::Token};
 
 
@@ -70,7 +69,7 @@ impl Parser {
                     self.error("operators are next to each other", 0, self.idx);
                     continue;
                 }
-
+                
                 if self.peek() == &Token::RightParen {
                     if self.open_parenthesis > 0 {
                         self.open_parenthesis -= 1;
@@ -79,6 +78,7 @@ impl Parser {
                         continue;
                     }
                 }
+
                 if self.match_token(Token::Invalid) {
                     self.error = true;
                     rigth = self.unary();
@@ -95,7 +95,7 @@ impl Parser {
             if let Token::Sentence(_) = self.previous() {
                 self.error("simple proposition is in an invalid position", 0, self.idx);
             }
-            proposition = Expr::Literal(self.advance_owned());
+            proposition = self.proposition();
         }
 
         if self.match_token(Token::Invalid) || self.peek() == &Token::LeftParen {

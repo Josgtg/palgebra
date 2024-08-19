@@ -1,4 +1,5 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
+
 pub enum Token {
     And,
     Or,

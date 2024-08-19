@@ -169,4 +169,9 @@ mod tests {
     fn incorrect_with_unvalid() {
         assert_err("p & 9 s || a")
     }
+
+    #[test]
+    fn sourrounded_by_operator() {
+        assert_err("|p|");
+    }
 }
