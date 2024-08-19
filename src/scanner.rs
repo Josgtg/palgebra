@@ -1,8 +1,9 @@
+use std::collections::HashSet;
 use crate::token::Token;
 use crate::errors;
 
 
-pub fn scan(proposition: &str) -> (Vec<Token>, bool) {
+pub fn scan(proposition: &str) -> (Vec<Token>, HashSet<char>, bool) {
     let mut scanner = Scanner::new();
     scanner.scan(proposition)
 }
@@ -14,6 +15,7 @@ fn ignore(c: char) -> bool {
 
 
 struct Scanner {
+    simples: HashSet<char>,
     tokens: Vec<Token>,
     error: bool,
     idx: u32
@@ -22,13 +24,14 @@ struct Scanner {
 impl Scanner {
     fn new() -> Self {
         Scanner {
+            simples: HashSet::new(),
             tokens: Vec::new(),
             error: false,
             idx: 1
         }
     }
 
-    fn scan(&mut self, proposition: &str) -> (Vec<Token>, bool) {
+    fn scan(&mut self, proposition: &str) -> (Vec<Token>, HashSet<char>, bool) {
         for c in proposition.chars() {
             if ignore(c) {
                 continue;
@@ -37,7 +40,7 @@ impl Scanner {
             self.idx += 1;
         }
 
-        (self.tokens.clone(), self.error)
+        (self.tokens.clone(), self.simples.clone(), self.error)
     }
 
     fn match_token(&mut self, c: char) {
@@ -56,7 +59,7 @@ impl Scanner {
                     self.tokens.push(Token::Invalid);
                     return
                 }
-                // self.sentences.insert(c);
+                self.simples.insert(c);
                 self.tokens.push(Token::Sentence(c));
             }
         }
