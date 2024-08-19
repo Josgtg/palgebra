@@ -1,26 +1,35 @@
 #[cfg(test)]
 
 mod tests {
-    use crate::parse;
-    use crate::ast_printer::print;
+    use crate::scanner::scan;
+    use crate::parser::parse;
+    use crate::tests::ast_printer::print_ast;
     use crate::grammar::Expr;
 
     fn debug(expr: Box<Expr>) {
-        println!("{:?}", print(expr));
+        println!("{:?}", print_ast(expr));
     }
 
     fn assert_ok(proposition: &str) {
         println!("{}", proposition);
-        let expr = parse(proposition);
+
+        let (tokens, _)= scan(proposition);
+
+        let expr = parse(tokens);
+
         if let Err(_) = expr {
             panic!();
         }
+
         debug(expr.unwrap());
     }
 
     fn assert_err(proposition: &str) {
         println!("{}", proposition);
-        if let Ok(expr) = parse(proposition) {
+
+        let (tokens, _) = scan(proposition);
+
+        if let Ok(expr) = parse(tokens) {
             debug(expr);
             panic!();
         }

@@ -3,7 +3,7 @@
 use crate::token::Token;
 use crate::grammar::Expr;
 
-pub fn print(expr: Box<Expr>) -> String {
+pub fn print_ast(expr: Box<Expr>) -> String {
     as_str(expr)
 }
 
@@ -70,7 +70,7 @@ mod tests {
                     ))
             ))
         );
-        println!("{}", print(Box::new(expr)));
+        println!("{}", print_ast(Box::new(expr)));
     }
 
     #[test]
@@ -98,7 +98,7 @@ mod tests {
                     ))
             ))
         );
-        println!("{}", print(Box::new(expr)));
+        println!("{}", print_ast(Box::new(expr)));
     }
 
     #[test]
@@ -138,6 +138,6 @@ mod tests {
                 )),
             ))
         );
-        println!("{}", print(Box::new(expr)));
+        println!("{}", print_ast(Box::new(expr)));
     }
 }

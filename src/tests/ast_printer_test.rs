@@ -1,9 +1,9 @@
 #[cfg(test)]
 
 mod tests {
+    use crate::tests::ast_printer::print_ast;
     use crate::grammar::Expr;
     use crate::token::Token;
-    use crate::ast_printer::print;
 
     #[test]
     fn first() {
@@ -21,7 +21,7 @@ mod tests {
                     ))
             ))
         );
-        println!("{}", print(Box::new(expr)));
+        println!("{}", print_ast(Box::new(expr)));
     }
 
     #[test]
@@ -49,7 +49,7 @@ mod tests {
                     ))
             ))
         );
-        println!("{}", print(Box::new(expr)));
+        println!("{}", print_ast(Box::new(expr)));
     }
 
     #[test]
@@ -89,6 +89,6 @@ mod tests {
                 )),
             ))
         );
-        println!("{}", print(Box::new(expr)));
+        println!("{}", print_ast(Box::new(expr)));
     }
 }

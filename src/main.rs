@@ -2,14 +2,13 @@
 
 mod tests;
 
-use std::io::{self, BufRead};
+mod scanner;
 mod parser;
-use parser::Parser;
 mod token;
 mod errors;
 mod grammar;
-use grammar::Expr;
-mod ast_printer;
+
+use std::io::{self, BufRead};
 
 fn welcome() {
     let mut message: String = String::new();
@@ -30,23 +29,22 @@ fn read_expression() -> String {
     expression
 }
 
-pub fn parse(proposition: &str) -> Result<Box<Expr>, ()> {
-    let mut parser = Parser::new();
-    parser.scan(proposition);
-    // parser.print_tokens();
-    parser.parse()
-}
-
 fn main() {
     welcome();
 
-    let expression = read_expression();
-    let res = parse(&expression);
+    let proposition = read_expression();
+
+    let (tokens, err) = scanner::scan(&proposition);
+
+    let res = parser::parse(tokens);
+
     println!();
 
-    if let Ok(_) = res {
-        println!("Good! The proposition is a WFF");
-    } else {
+    if err {
         println!("The proposition has errors; is not a WFF");
+    } else if let Err(_) = res {
+        println!("The proposition has errors; is not a WFF");
+    } else {
+        println!("Good! The proposition is a WFF");
     }
 }

@@ -1,35 +1,37 @@
 // use std::{collections::HashSet};
 
-use super::scanner;
 use crate::{errors, grammar::Expr, token::Token};
+
+
+pub fn parse(tokens: Vec<Token>) -> Result<Box<Expr>, ()> {
+    let mut parser = Parser::new(tokens);
+    parser.parse()
+
+}
+
 
 fn is_operator_token(token: &Token) -> bool {
     token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen || token == &Token::Not
 }
+
 
 pub struct Parser {
     // pub sentences: HashSet<char>,
     pub tokens: Vec<Token>,
     pub error: bool,
     open_parenthesis: u32,
-    start_idx: usize,
     idx: usize
 }
 
 impl Parser {
-    pub fn new() -> Self {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Parser {
             // sentences: HashSet::new(),
-            tokens: Vec::new(),
+            tokens,
             error: false,
             open_parenthesis: 0,
-            start_idx: 0,
             idx: 0
         }
-    }
-
-    pub fn scan(&mut self, proposition: &str) {
-       scanner::scan(self, proposition);
     }
 
     pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
@@ -47,16 +49,17 @@ impl Parser {
     // Building the tree
 
     fn proposition(&mut self, )  -> Expr {
-        self.start_idx = self.idx;
         let mut proposition = self.unary();
+        
+        let mut start_idx = self.idx;
 
         while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
             if proposition == Expr::Null {
-                self.error("missing proposition on left side of operation");
+                self.error("missing proposition on left side of operation", 0, start_idx);
                 continue;
             }
 
-            self.start_idx = self.idx;
+            start_idx = self.idx;
             
             let operator = self.previous_owned();
 
@@ -64,7 +67,7 @@ impl Parser {
 
             if rigth == Expr::Null {
                 if is_operator_token(self.peek()) {
-                    self.error("operators are next to each other");
+                    self.error("operators are next to each other", 0, self.idx);
                     continue;
                 }
 
@@ -72,14 +75,15 @@ impl Parser {
                     if self.open_parenthesis > 0 {
                         self.open_parenthesis -= 1;
                     } else {
-                        self.error("unmatched closing parenthesis");
+                        self.error("unmatched closing parenthesis", 0, self.idx);
                         continue;
                     }
                 }
                 if self.match_token(Token::Invalid) {
+                    self.error = true;
                     rigth = self.unary();
                 } else {
-                    self.error("missing proposition on right side of operation");
+                    self.error("missing proposition on right side of operation", 0, start_idx);
                     continue;
                 }
             }
@@ -89,34 +93,30 @@ impl Parser {
 
         if let Token::Sentence(_) = self.peek() {
             if let Token::Sentence(_) = self.previous() {
-                self.manual_error("simple proposition is in an invalid position", 0, self.idx);
-                proposition = self.proposition();
+                self.error("simple proposition is in an invalid position", 0, self.idx);
             }
+            proposition = Expr::Literal(self.advance_owned());
         }
 
-        if self.match_token(Token::Invalid) {
+        if self.match_token(Token::Invalid) || self.peek() == &Token::LeftParen {
+            self.error = true;
             proposition = self.proposition();
         } 
 
         if self.peek() == &Token::Not {
-            self.manual_error("not operator is in an invalid position", 0, self.idx);
-        }
-
-        if self.peek() == &Token::LeftParen {
-            proposition = self.unary();
+            self.error("not operator is in an invalid position", 0, self.idx);
         }
 
         proposition
     }
 
     fn unary(&mut self) -> Expr {
-        self.start_idx = self.idx;
+        let start_idx = self.idx;
 
         if self.match_token(Token::Not) {
             let right = self.proposition();
             if right == Expr::Null {
-                self.error("missing proposition on right side of negation");
-                return Expr::Null;
+                self.error("missing proposition on right side of negation", 0, start_idx);
             }
             return Expr::Unary(Token::Not, Box::new(right));
         }
@@ -125,7 +125,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expr {
-        self.start_idx = self.idx;
+        let start_idx = self.idx;
 
         if self.match_token(Token::LeftParen) {
             self.open_parenthesis += 1;
@@ -134,28 +134,26 @@ impl Parser {
                 if self.match_token(Token::RightParen) {
                     self.open_parenthesis -= 1;
                 } else {
-                    self.manual_error("expected closing parenthesis", 0, self.idx);
+                    self.error("expected closing parenthesis", 0, self.idx);
                 }
-            }
+            }   
             if proposition == Expr::Null {
-                if !self.is_at_end() { self.manual_error("not a proposition", 1, self.start_idx); }
-                return Expr::Null;
+                self.error("not a proposition", 1, start_idx);
             }
             return Expr::Grouping(Box::new(proposition))
         }
 
         if let Token::Sentence(_) = self.peek() {
-            Expr::Literal(self.advance_owned())
-        } else {
-            if self.match_token(Token::RightParen) {
-                if self.open_parenthesis > 0 {
-                    self.open_parenthesis -= 1;
-                } else {
-                    self.manual_error("closing parenthesis does not have a match", 0, self.idx - 1);
-                }
-            }
-            Expr::Null
+            return Expr::Literal(self.advance_owned());
         }
+
+        if self.peek() == &Token::RightParen {
+            if self.open_parenthesis == 0 {
+                self.error("closing parenthesis does not have a match", 0, self.idx);
+            }
+        }
+
+        Expr::Null
     }
 
     // Help
@@ -183,13 +181,7 @@ impl Parser {
 
     // Error handling
 
-    fn error(&mut self, message: &str) {
-        self.error = true;
-        errors::report(message, 0, (self.start_idx + 1) as u32);
-        self.synchronize();
-    }
-
-    fn manual_error(&mut self, message: &str, code: u32, idx: usize) {
+    fn error(&mut self, message: &str, code: u32, idx: usize) {
         self.error = true;
         errors::report(message, code, (idx + 1) as u32);
         self.synchronize();
