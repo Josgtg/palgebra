@@ -24,7 +24,7 @@ impl Scanner {
         Scanner {
             tokens: Vec::new(),
             error: false,
-            idx: 0
+            idx: 1
         }
     }
 
