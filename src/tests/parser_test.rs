@@ -13,7 +13,7 @@ mod tests {
     fn assert_ok(proposition: &str) {
         println!("{}", proposition);
 
-        let (tokens, _)= scan(proposition);
+        let (tokens, _, _)= scan(proposition);
 
         let expr = parse(tokens);
 
@@ -27,7 +27,7 @@ mod tests {
     fn assert_err(proposition: &str) {
         println!("{}", proposition);
 
-        let (tokens, _) = scan(proposition);
+        let (tokens, _, _) = scan(proposition);
 
         if let Ok(expr) = parse(tokens) {
             debug(expr);
