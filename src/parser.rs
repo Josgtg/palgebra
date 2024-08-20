@@ -92,9 +92,7 @@ impl Parser {
         }
 
         if let Token::Sentence(_) = self.peek() {
-            if let Token::Sentence(_) = self.previous() {
-                self.error("simple proposition is in an invalid position", 0, self.idx);
-            }
+            self.error = true;
             proposition = self.proposition();
         }
 
@@ -126,6 +124,15 @@ impl Parser {
 
     fn primary(&mut self) -> Expr {
         let start_idx = self.idx;
+
+        if let Token::Sentence(_) = self.previous() {
+            if self.peek() == &Token::LeftParen {
+                self.error("grouping in invalid position", 0, start_idx);
+            }
+            if let Token::Sentence(_) = self.peek() {
+                self.error("simple proposition is in an invalid position", 0, self.idx);
+            }
+        }
 
         if self.match_token(Token::LeftParen) {
             self.open_parenthesis += 1;
@@ -210,32 +217,28 @@ impl Parser {
     // Token consuming
 
     fn previous(&self) -> &Token {
+        if self.idx == 0 { return &Token::Null }
         &self.tokens[self.idx - 1]
     }
 
     fn previous_owned(&self) -> Token {
+        if self.idx == 0 { return Token::Null }
         self.tokens[self.idx - 1].clone()
     }
 
     fn peek(&self) -> &Token {
-        if self.is_at_end() {
-            return &Token::Null;
-        }
+        if self.is_at_end() { return &Token::Null }
         &self.tokens[self.idx]
     }
 
     fn advance(&mut self) -> &Token {
-        if self.is_at_end() {
-            return &Token::Null;
-        }
+        if self.is_at_end() { return &Token::Null }
         self.idx += 1;
         &self.tokens[self.idx - 1]
     }
 
     fn advance_owned(&mut self) -> Token {
-        if self.is_at_end() {
-            return Token::Null;
-        }
+        if self.is_at_end() { return Token::Null }
         self.idx += 1;
         self.tokens[self.idx - 1].clone()
     }

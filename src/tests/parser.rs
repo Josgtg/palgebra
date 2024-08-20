@@ -174,4 +174,9 @@ mod tests {
     fn sourrounded_by_operator() {
         assert_err("|p|");
     }
+
+    #[test]
+    fn invalid_group() {
+        assert_err("p(q)");
+    }
 }
