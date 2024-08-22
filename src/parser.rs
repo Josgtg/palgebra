@@ -112,7 +112,7 @@ impl Parser {
         let start_idx = self.idx;
 
         if self.match_token(Token::Not) {
-            let right = self.proposition();
+            let right = self.unary();
             if right == Expr::Null {
                 self.error("missing proposition on right side of negation", 0, start_idx);
             }
