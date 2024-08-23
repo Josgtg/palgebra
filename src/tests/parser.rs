@@ -183,4 +183,29 @@ mod tests {
     fn invalid_group() {
         assert_err("p(q)");
     }
+
+    #[test]
+    fn literals() {
+        assert_ok("(true & false)");
+    }
+
+    #[test]
+    fn literals_complex() {
+        assert_ok("(true & false | (!true ~ 0))");
+    }
+
+    #[test]
+    fn new_line() {
+        assert_ok("true & false | (!true ~ 0)");
+    }
+
+    #[test]
+    fn new_line_err() {
+        assert_err("true & false | (!true ~)");
+    }
+
+    #[test]
+    fn new_line_trailing_err() {
+        assert_err("p &\n");
+    }
 }

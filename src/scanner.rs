@@ -47,14 +47,14 @@ impl Scanner {
             self.match_token();
         }
 
+        if self.previous() == '\n' { self.tokens.pop(); }
         (self.tokens.clone(), self.simples.clone(), self.error)
     }
 
     fn match_new_line(&mut self) -> bool {
         if self.peek() == '\n' {
             self.advance();
-            if self.is_at_end() { self.tokens.push(Token::Eof) }
-            else { self.tokens.push(Token::NewLine) }
+            self.tokens.push(Token::NewLine);
             self.line += 1;
             self.col = 1;
             return true;
@@ -76,9 +76,15 @@ impl Scanner {
                 self.tokens.push(Token::Comment);
             }
             '1' => self.tokens.push(Token::True),
-            't' => if self.match_str("rue") { self.tokens.push(Token::True) }
+            't' => {
+                if self.match_str("rue") { self.tokens.push(Token::True) }
+                else { self.tokens.push(Token::Sentence('t')); }
+            }
             '0' => self.tokens.push(Token::False),
-            'f' => if self.match_str("alse") { self.tokens.push(Token::False) }
+            'f' => {
+                if self.match_str("alse") { self.tokens.push(Token::False) }
+                else { self.tokens.push(Token::Sentence('f')); }
+            }
             _ => {
                 if !self.previous().is_alphabetic() {
                     self.error = true;
@@ -130,7 +136,6 @@ impl Scanner {
             if self.peek() == c { self.advance(); }
             else { return false }
         }
-        if !ignore(self.peek()) { return false }
         true
     }
 

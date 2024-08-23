@@ -31,7 +31,9 @@ impl Interpreter {
     }
 
     fn literal(&self, t: Token) -> bool {
-        *self.values.get(&t).unwrap()
+        if t == Token::True { true }
+        else if t == Token::False { false }
+        else { *self.values.get(&t).unwrap() }
     }
 
     fn binary(&self, left: Box<Expr>, op: Token, right: Box<Expr>) -> bool {
