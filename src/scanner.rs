@@ -14,36 +14,58 @@ fn ignore(c: char) -> bool {
 
 
 struct Scanner {
+    proposition: Vec<char>,
     simples: Vec<char>,
     tokens: Vec<Token>,
     error: bool,
-    idx: u32
+    line: u32,
+    col: u32,
+    idx: usize
 }
 
 impl Scanner {
     fn new() -> Self {
         Scanner {
+            proposition: Vec::new(),
             simples: Vec::new(),
             tokens: Vec::new(),
             error: false,
-            idx: 1
+            line: 1,
+            col: 1,
+            idx: 0
         }
     }
 
     fn scan(&mut self, proposition: &str) -> (Vec<Token>, Vec<char>, bool) {
-        for c in proposition.chars() {
-            if ignore(c) {
+        self.proposition = proposition.chars().collect();
+        while !self.is_at_end() {
+            if self.match_new_line() { continue; }
+            if ignore(self.peek()) {
+                self.idx += 1;
                 continue;
             }
-            self.match_token(c);
-            self.idx += 1;
+            self.match_token();
         }
 
         (self.tokens.clone(), self.simples.clone(), self.error)
     }
 
-    fn match_token(&mut self, c: char) {
-        match c {
+    fn match_new_line(&mut self) -> bool {
+        if self.peek() == '\n' {
+            self.advance();
+            self.line += 1;
+            self.col = 1;
+            self.tokens.push(Token::NewLine);
+            return true;
+        }
+        false
+    }
+
+    fn match_token(&mut self) {
+        println!("{}: {}", self.advance(), self.idx);
+        self.idx -= 1;
+        self.col -= 1;
+        match self.advance() {
             '&' => self.tokens.push(Token::And),
             '|' => self.tokens.push(Token::Or),
             '!' => self.tokens.push(Token::Not),
@@ -51,16 +73,74 @@ impl Scanner {
             '>' => self.tokens.push(Token::IfThen),
             '(' => self.tokens.push(Token::LeftParen),
             ')' => self.tokens.push(Token::RightParen),
+            '/' => if self.match_char('/') {
+                self.advance_until('\n');
+                self.tokens.push(Token::Comment);
+            }
+            '1' => self.tokens.push(Token::True),
+            't' => if self.match_str("rue") { self.tokens.push(Token::True) }
+            '0' => self.tokens.push(Token::False),
+            'f' => if self.match_str("alse") { self.tokens.push(Token::False) }
             _ => {
-                if !c.is_alphabetic() {
+                if !self.previous().is_alphabetic() {
                     self.error = true;
-                    errors::report(&format!("unexpected character \"{}\"", c), 0, self.idx);
+                    errors::report(&format!("unexpected character \"{}\"", self.previous()), 0, self.line, self.col - 1);
                     self.tokens.push(Token::Invalid);
                     return
                 }
-                self.simples.push(c);
-                self.tokens.push(Token::Sentence(c));
+                self.simples.push(self.previous());
+                self.tokens.push(Token::Sentence(self.previous()));
             }
         }
+    }
+
+    fn previous(&self) -> char {
+        if self.idx == 0 { return '\0' }
+        self.proposition[self.idx - 1]
+    }
+
+    fn peek(&self) -> char {
+        if self.is_at_end() { return '\0' }
+        self.proposition[self.idx]
+    }
+
+    fn advance(&mut self) -> char {
+        if self.is_at_end() { return '\0' }
+        self.idx += 1;
+        self.col += 1;
+        self.proposition[self.idx - 1]
+    }
+
+    fn peek_next(&mut self) -> char {
+        self.idx += 1;
+        if self.is_at_end() { return '\0' }
+        self.idx -= 1;
+        self.proposition[self.idx + 1]
+    }
+
+    fn match_char(&mut self, to_match: char) -> bool {
+        if self.peek() == to_match {
+            self.advance();
+            return true
+        }
+        false
+    }
+
+    fn match_str(&mut self, to_match: &str) -> bool {
+        let backup = self.idx;
+        for c in to_match.chars() {
+            if self.peek() == c { self.advance(); }
+            else { return false }
+        }
+        if !ignore(self.peek()) { return false }
+        true
+    }
+
+    fn advance_until(&mut self, to_stop: char) {
+        while !self.is_at_end() && !self.match_char(to_stop) { self.advance(); }
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.idx >= self.proposition.len()
     }
 }

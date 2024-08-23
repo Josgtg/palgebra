@@ -8,6 +8,10 @@ pub enum Token {
     IfThen,
     LeftParen,
     RightParen,
+    Comment,
+    True,
+    False,
+    NewLine,
     Sentence(char),
     Invalid,
     Null
@@ -23,8 +27,11 @@ impl Token {
             Token::IfThen => '>',
             Token::LeftParen => '(',
             Token::RightParen => ')',
+            Token::True => '1',
+            Token::False => '0',
+            Token::NewLine => '\n',
             Token::Sentence(c) => *c,
-            Token::Invalid | Token::Null => '\0',
+            Token::Comment | Token::Invalid | Token::Null => '\0',
         }
     }
 }

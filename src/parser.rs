@@ -19,16 +19,19 @@ pub struct Parser {
     pub tokens: Vec<Token>,
     pub error: bool,
     open_parenthesis: u32,
+    line: u32,
+    col: u32,
     idx: usize
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Parser {
-            // sentences: HashSet::new(),
-            tokens,
+            tokens: Vec::new(),
             error: false,
             open_parenthesis: 0,
+            line: 0,
+            col: 0,
             idx: 0
         }
     }
@@ -50,7 +53,7 @@ impl Parser {
     fn proposition(&mut self, )  -> Expr {
         let mut proposition = self.unary();
         
-        let mut start_idx = self.idx;
+        let mut start_idx = self.col;
 
         while self.match_tokens(vec![Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
             if proposition == Expr::Null {
@@ -58,7 +61,7 @@ impl Parser {
                 continue;
             }
 
-            start_idx = self.idx;
+            start_idx = self.col;
             
             let operator = self.previous_owned();
 
@@ -66,7 +69,7 @@ impl Parser {
 
             if rigth == Expr::Null {
                 if is_operator_token(self.peek()) {
-                    self.error("operators are next to each other", 0, self.idx);
+                    self.error("operators are next to each other", 0, self.col);
                     continue;
                 }
                 
@@ -74,7 +77,7 @@ impl Parser {
                     if self.open_parenthesis > 0 {
                         self.open_parenthesis -= 1;
                     } else {
-                        self.error("unmatched closing parenthesis", 0, self.idx);
+                        self.error("unmatched closing parenthesis", 0, self.col);
                         continue;
                     }
                 }
@@ -102,14 +105,14 @@ impl Parser {
         } 
 
         if self.peek() == &Token::Not {
-            self.error("not operator is in an invalid position", 0, self.idx);
+            self.error("not operator is in an invalid position", 0, self.col);
         }
 
         proposition
     }
 
     fn unary(&mut self) -> Expr {
-        let start_idx = self.idx;
+        let start_idx = self.col;
 
         if self.match_token(Token::Not) {
             let right = self.unary();
@@ -123,14 +126,14 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expr {
-        let start_idx = self.idx;
+        let start_idx = self.col;
 
         if let Token::Sentence(_) = self.previous() {
             if self.peek() == &Token::LeftParen {
                 self.error("grouping in invalid position", 0, start_idx);
             }
             if let Token::Sentence(_) = self.peek() {
-                self.error("simple proposition is in an invalid position", 0, self.idx);
+                self.error("simple proposition is in an invalid position", 0, self.col);
             }
         }
 
@@ -141,7 +144,7 @@ impl Parser {
                 if self.match_token(Token::RightParen) {
                     self.open_parenthesis -= 1;
                 } else {
-                    self.error("expected closing parenthesis", 0, self.idx);
+                    self.error("expected closing parenthesis", 0, self.col);
                 }
             }   
             if proposition == Expr::Null {
@@ -150,13 +153,19 @@ impl Parser {
             return Expr::Grouping(Box::new(proposition))
         }
 
+        if self.peek() == &Token::NewLine || self.peek() == &Token::Comment {
+            self.line += 1;
+            self.col = 1;
+            return self.proposition();
+        }
+
         if let Token::Sentence(_) = self.peek() {
             return Expr::Literal(self.advance_owned());
         }
 
         if self.peek() == &Token::RightParen {
             if self.open_parenthesis == 0 {
-                self.error("closing parenthesis does not have a match", 0, self.idx);
+                self.error("closing parenthesis does not have a match", 0, self.col);
             }
         }
 
@@ -188,9 +197,9 @@ impl Parser {
 
     // Error handling
 
-    fn error(&mut self, message: &str, code: u32, idx: usize) {
+    fn error(&mut self, message: &str, code: u32, col: u32) {
         self.error = true;
-        errors::report(message, code, (idx + 1) as u32);
+        errors::report(message, code, self.line, col);
         self.synchronize();
     }
 
@@ -234,12 +243,14 @@ impl Parser {
     fn advance(&mut self) -> &Token {
         if self.is_at_end() { return &Token::Null }
         self.idx += 1;
+        self.col += 1;
         &self.tokens[self.idx - 1]
     }
 
     fn advance_owned(&mut self) -> Token {
         if self.is_at_end() { return Token::Null }
         self.idx += 1;
+        self.col += 1;
         self.tokens[self.idx - 1].clone()
     }
 }

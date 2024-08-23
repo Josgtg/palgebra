@@ -1,0 +1,7 @@
+0 p q
+1 s t
+
+// false p q
+// true s t
+
+p & q | (!s & t) // true

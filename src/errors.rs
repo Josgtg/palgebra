@@ -5,6 +5,6 @@ fn get_err_message(code: u32) -> String {
     }
 }
 
-pub fn report(message: &str, code: u32, col: u32) {
-    println!("{}: In character {}: {}", get_err_message(code), col, message);
+pub fn report(message: &str, code: u32, line: u32, col: u32) {
+    println!("{}: line {}, character {}: {}", get_err_message(code), line, col, message);
 }

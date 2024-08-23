@@ -1,7 +1,6 @@
-// #![allow(warnings)]
+#![allow(warnings)]
 
 mod tests;
-
 mod interpreter;
 mod scanner;
 mod parser;
@@ -22,6 +21,29 @@ fn welcome() {
     println!("{}", message);
 }
 
+fn main() {
+    let args = std::env::args();
+    if args.len() == 1 {
+        interactive();
+        return
+    }
+    if args.len() == 2 {
+        from_file();
+        return
+    }
+    println!("usage: paleval <file_name>\nIf no file is specificated, an interactive session will start");
+    std::process::exit(0);
+}
+
+fn interactive() {
+    println!("started interactive session");
+}
+
+fn from_file() {
+    println!("reading from file");
+}
+
+/*
 fn main() {
     welcome();
 
@@ -53,3 +75,4 @@ fn main() {
     let eval = interpreter::interpret(values, res.unwrap());
     println!("Your proposition evaluates to: {}", eval);
 }
+*/
