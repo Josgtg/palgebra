@@ -53,18 +53,16 @@ impl Scanner {
     fn match_new_line(&mut self) -> bool {
         if self.peek() == '\n' {
             self.advance();
+            if self.is_at_end() { self.tokens.push(Token::Eof) }
+            else { self.tokens.push(Token::NewLine) }
             self.line += 1;
             self.col = 1;
-            self.tokens.push(Token::NewLine);
             return true;
         }
         false
     }
 
     fn match_token(&mut self) {
-        println!("{}: {}", self.advance(), self.idx);
-        self.idx -= 1;
-        self.col -= 1;
         match self.advance() {
             '&' => self.tokens.push(Token::And),
             '|' => self.tokens.push(Token::Or),

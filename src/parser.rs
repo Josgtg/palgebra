@@ -1,4 +1,3 @@
-// use std::{collections::HashSet};
 use crate::{errors, grammar::Expr, token::Token};
 
 
@@ -15,7 +14,6 @@ fn is_operator_token(token: &Token) -> bool {
 
 
 pub struct Parser {
-    // pub sentences: HashSet<char>,
     pub tokens: Vec<Token>,
     pub error: bool,
     open_parenthesis: u32,
@@ -72,6 +70,12 @@ impl Parser {
                     self.error("operators are next to each other", 0, self.col);
                     continue;
                 }
+
+                if self.peek() == &Token::NewLine || self.peek() == &Token::Comment {
+                    self.line += 1;
+                    self.col = 1;
+                    self.error("expected expression on right side of operator, but line finished", 0, self.col);
+                }
                 
                 if self.peek() == &Token::RightParen {
                     if self.open_parenthesis > 0 {
@@ -92,6 +96,12 @@ impl Parser {
             }
 
             proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
+        }
+
+        if self.peek() == &Token::NewLine || self.peek() == &Token::Comment {
+            self.line += 1;
+            self.col = 1;
+            proposition = self.proposition();
         }
 
         if let Token::Sentence(_) = self.peek() {
@@ -153,10 +163,8 @@ impl Parser {
             return Expr::Grouping(Box::new(proposition))
         }
 
-        if self.peek() == &Token::NewLine || self.peek() == &Token::Comment {
-            self.line += 1;
-            self.col = 1;
-            return self.proposition();
+        if self.peek() == &Token::True || self.peek() == &Token::False {
+            return Expr::Literal(self.advance_owned());
         }
 
         if let Token::Sentence(_) = self.peek() {

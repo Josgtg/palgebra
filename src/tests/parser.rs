@@ -15,6 +15,8 @@ mod tests {
 
         let (tokens, _, _)= scan(proposition);
 
+        println!("{:?}", tokens);
+
         let expr = parse(tokens);
 
         if let Err(_) = expr {
@@ -28,6 +30,8 @@ mod tests {
         println!("{}", proposition);
 
         let (tokens, _, _) = scan(proposition);
+
+        println!("{:?}", tokens);
 
         if let Ok(expr) = parse(tokens) {
             debug(expr);

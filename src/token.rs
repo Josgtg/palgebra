@@ -14,7 +14,8 @@ pub enum Token {
     NewLine,
     Sentence(char),
     Invalid,
-    Null
+    Null,
+    Eof
 }
 
 impl Token {
@@ -31,7 +32,7 @@ impl Token {
             Token::False => '0',
             Token::NewLine => '\n',
             Token::Sentence(c) => *c,
-            Token::Comment | Token::Invalid | Token::Null => '\0',
+            Token::Eof | Token::Comment | Token::Invalid | Token::Null => '\0',
         }
     }
 }
