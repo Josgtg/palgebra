@@ -5,6 +5,7 @@ mod tests {
     use crate::scanner::scan;
     use crate::token::Token;
 
+    #[allow(warnings)]
     fn print_tokens(tokens: (Vec<Token>, Vec<char>, bool)) {
         println!("{:?}", tokens.1);
     }

@@ -1,5 +1,3 @@
-#![allow(warnings)]
-
 mod tests;
 mod interpreter;
 mod scanner;
@@ -8,23 +6,19 @@ mod token;
 mod errors;
 mod grammar;
 mod utils;
+mod possible;
 
-use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
-use std::io::Write;
 use utils::*;
+use possible::*;
 use token::Token;
-use grammar::Expr;
 
-fn welcome_() {
+fn welcome() {
     let mut message: String = String::new();
-    message += "\nPropositional algebra evaluator\n\n";
-    message += "Write a proposition and it will be evaluated.\n";
     message += "----------------------------\nSymbol list:\n";
     message += "and: &\nor: |\nnot: !\nif and only if: ~\nif, then: >\n----------------------------\n";
-    message += "Any alphabetical letter will be interpreted as a simple proposition.\n";
-    message += "You can group using parenthesis.\n";
-    message += "Write your expression in the next line:\n";
+    message += "0 and 1 or \"false\" and \"true\", respectively are considered literal values\n";
+    message += "Any alphabetical letter will be interpreted as a variable simple proposition and all its possible values will be evaluated\n";
+    message += "You can group using parenthesis\n";
     println!("{}", message);
 }
 
@@ -38,7 +32,7 @@ fn main() {
         from_file(&args[1]);
         return
     }
-    println!("usage: paleval <file_name>\nIf no file is specificated, an interactive session will start");
+    println!("usage: paleval <file_name>\nIf no file is given, an interactive session will start");
     std::process::exit(64);
 }
 
@@ -48,17 +42,22 @@ fn interactive() {
     let mut variant_num: usize;
     let mut possible: String;
     let mut proposition: String;
-    let mut values: Vec<char>;
     let mut tokens: Vec<token::Token>;
     let mut i: usize = 1;
+
+    welcome();
     loop {
         err = false;
         proposition = read_expression_from_user();
 
         if proposition.is_empty() { continue }
         else if proposition.eq("exit") { return }
+        else if proposition.eq("cls") || proposition.eq("clear") {
+            // clear screen and place the cursor in row 1 col 1
+            print!("{esc}c{esc}[1;1H", esc = 27 as char);
+        }
 
-        let res_scan_tokens= scanner::scan(&proposition, 1);
+        let res_scan_tokens= scanner::scan(&proposition, i as u32);
         if let Err(_) = res_scan_tokens {
             err = true;
             tokens = res_scan_tokens.unwrap_err();
@@ -66,8 +65,8 @@ fn interactive() {
             tokens = res_scan_tokens.unwrap();
         }
 
-        if let Err(_) = parser::parse(tokens.clone(), i as u32) { continue; }
-        if err { continue; }
+        if let Err(_) = parser::parse(tokens.clone(), i as u32) { continue }
+        if err { continue }
 
         variant_num = 0;
         let (t, values) = replace_literals(&mut tokens);
@@ -87,7 +86,7 @@ fn from_file(path: &str) {
     let mut possible: String;
     let mut variant_num: usize;
     let mut err: bool = false;
-    let mut scan_tokens: Vec<token::Token>;
+    let scan_tokens: Vec<token::Token>;
 
     let proposition = utils::read_expression_from_file(path);
 
@@ -102,7 +101,7 @@ fn from_file(path: &str) {
     let divided = divide_tokens(scan_tokens);
     let len_divided = divided.len();
     let mut counter_counter: u32 = 0;
-    for (i, tokens) in divided.iter().enumerate() {
+    for tokens in divided.iter() {
         let mut counter: u32 = 0;
         for t in tokens.iter() {
             if let Token::Sentence(_) = t { counter += 1; }
@@ -132,10 +131,9 @@ fn from_file(path: &str) {
     }
 }
 
-fn test(proposition: &str) {
+fn _test(proposition: &str) {
     let mut err: bool;
     let mut variant_num: usize;
-    let mut values: Vec<char>;
     let mut tokens: Vec<token::Token>;
     let mut i: usize = 1;
     err = false;

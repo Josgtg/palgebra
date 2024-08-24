@@ -19,7 +19,6 @@ fn ignore(c: char) -> bool {
 
 struct Scanner {
     proposition: Vec<char>,
-    simples: Vec<char>,
     tokens: Vec<Token>,
     error: bool,
     line: u32,
@@ -31,7 +30,6 @@ impl Scanner {
     fn new(line: u32) -> Self {
         Scanner {
             proposition: Vec::new(),
-            simples: Vec::new(),
             tokens: Vec::new(),
             error: false,
             line,
@@ -96,7 +94,6 @@ impl Scanner {
                     self.tokens.push(Token::Invalid);
                     return
                 }
-                self.simples.push(self.previous());
                 self.tokens.push(Token::Sentence(self.previous()));
             }
         }
@@ -119,13 +116,6 @@ impl Scanner {
         self.proposition[self.idx - 1]
     }
 
-    fn peek_next(&mut self) -> char {
-        self.idx += 1;
-        if self.is_at_end() { return '\0' }
-        self.idx -= 1;
-        self.proposition[self.idx + 1]
-    }
-
     fn match_char(&mut self, to_match: char) -> bool {
         if self.peek() == to_match {
             self.advance();
@@ -138,7 +128,10 @@ impl Scanner {
         let backup = self.idx;
         for c in to_match.chars() {
             if self.peek() == c { self.advance(); }
-            else { return false }
+            else {
+                self.idx = backup;
+                return false
+            }
         }
         true
     }

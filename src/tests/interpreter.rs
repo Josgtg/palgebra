@@ -1,8 +1,6 @@
 #[cfg(test)]
 
 mod tests {
-    use std::collections::HashMap;
-
     use crate::scanner::scan;
     use crate::parser::parse;
     use crate::interpreter::interpret;

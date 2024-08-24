@@ -214,7 +214,7 @@ impl Parser {
     fn synchronize(&mut self) {
         /*
         When there is an error, we need to get to a point where we can continue catching
-        errors without being affected by the previous ones. That point is either in a new sentence
+        errors without being affected by the previous ones. That point is either in a literal value
         or a left prenthesis.
         */
         while !self.is_at_end() {
@@ -229,6 +229,10 @@ impl Parser {
             }
             if self.peek() == &Token::RightParen {
                 if self.open_parenthesis > 0 { self.open_parenthesis -= 1; }
+                else {
+                    self.error = true;
+                    errors::report("closing parenthesis does not have a match", 0, self.line, (self.idx + 1) as u32);
+                }
             }
             self.advance();
         }
