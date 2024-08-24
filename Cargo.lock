@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "palgebra_evaluator"
+name = "propositional-logic-evaluator"
 version = "0.1.0"
