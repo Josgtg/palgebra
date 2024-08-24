@@ -7,6 +7,10 @@ pub fn parse(tokens: Vec<Token>, line: u32) -> Result<Box<Expr>, ()> {
 
 }
 
+fn is_literal_value_token(token: &Token) -> bool {
+    if let Token::Sentence(_) = token { return true }
+    token == &Token::True || token == &Token::False
+}
 
 fn is_operator_token(token: &Token) -> bool {
     token == &Token::And || token == &Token::Or || token == &Token::IfOnlyIf || token == &Token::IfThen || token == &Token::Not
@@ -90,12 +94,7 @@ impl Parser {
             proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
         }
 
-        if let Token::Sentence(_) = self.peek() {
-            self.error = true;
-            proposition = self.proposition();
-        }
-        
-        if self.peek() == &Token::True || self.peek() == &Token::False {
+        if is_literal_value_token(self.peek()) {
             self.error = true;
             proposition = self.proposition();
         }
@@ -129,21 +128,12 @@ impl Parser {
     fn primary(&mut self) -> Expr {
         let start_idx = self.idx;
 
-        if let Token::Sentence(_) = self.previous() {
+        if is_literal_value_token(self.previous()) {
             if self.peek() == &Token::LeftParen {
                 self.error("grouping in invalid position", 0, start_idx);
             }
-            if let Token::Sentence(_) = self.peek() {
+            if is_literal_value_token(self.peek()) {
                 self.error("simple proposition is in an invalid position", 0, self.idx);
-            }
-        }
-
-        if self.previous() == &Token::True || self.previous() == &Token::False {
-            if self.peek() == &Token::LeftParen {
-                self.error("grouping in invalid position", 0, start_idx);
-            }
-            if self.peek() == &Token::True || self.peek() == &Token::False {
-                self.error("literal value is in an invalid position", 0, self.idx);
             }
         }
 
@@ -163,11 +153,7 @@ impl Parser {
             return Expr::Grouping(Box::new(proposition))
         }
 
-        if let Token::Sentence(_) = self.peek() {
-            return Expr::Literal(self.advance_owned());
-        }
-
-        if self.peek() == &Token::True || self.peek() == &Token::False {
+        if is_literal_value_token(self.peek()) {
             return Expr::Literal(self.advance_owned());
         }
 
@@ -218,10 +204,7 @@ impl Parser {
         or a left prenthesis.
         */
         while !self.is_at_end() {
-            if let Token::Sentence(_) = self.peek() {
-                return
-            }
-            if self.peek() == &Token::True || self.peek() == &Token::False {
+            if is_literal_value_token(self.peek()) {
                 return
             }
             if self.peek() == &Token::LeftParen {
