@@ -9,7 +9,7 @@ pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> St
             if v.1 {
                 colored = "\x1b[92mtrue \x1b[0m";
             } else {
-                colored = "\x1b[31mfalse\x1b[0m";
+                colored = "\x1b[91mfalse\x1b[0m";
             }
             message.push_str(&format!("{}: {} \x1b[90m|\x1b[0m ", v.0, colored))
         }

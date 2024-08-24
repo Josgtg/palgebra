@@ -8,13 +8,13 @@ pub fn colorize(i: u32, b: bool) {
         if b {
             println!("\x1b[92m{}\x1b[0m", b);
         } else {
-            println!("\x1b[31m{}\x1b[0m", b);
+            println!("\x1b[91m{}\x1b[0m", b);
         }
     } else {
         if b {
             println!("{}: \x1b[92m{}\x1b[0m", i, b);
         } else {
-            println!("{}: \x1b[31m{}\x1b[0m", i, b);
+            println!("{}: \x1b[91m{}\x1b[0m", i, b);
         }
     }
 }
