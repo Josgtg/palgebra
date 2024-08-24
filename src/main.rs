@@ -74,7 +74,7 @@ fn interactive() {
         if err { continue }
 
         variant_num = 0;
-        let (t, values) = replace_literals(&mut tokens);
+        let (t, values) = replace_literals(&mut tokens, true);
         for variant in t {
             expr = parser::parse(variant, i as u32).unwrap();
             possible = print_possible(&values, variant_num);
@@ -116,7 +116,7 @@ fn from_file(path: &str) {
     }
 
     if (len_divided * (2^counter_counter) as usize) > 1024 {
-        errors::fatal("too many variables (more than 2048 or 2^12 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1);
+        errors::fatal("too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1, true);
         return
     }
 
@@ -124,7 +124,7 @@ fn from_file(path: &str) {
         if parser::parse(tokens.clone(), (i + 1) as u32).is_err() { continue; }
         if err { continue }
 
-        let (t, values) = replace_literals(&mut tokens);
+        let (t, values) = replace_literals(&mut tokens, false);
         variant_num = 0;
         for variant in t {
             expr = parser::parse(variant, (i + 1) as u32).unwrap();
@@ -161,7 +161,7 @@ fn _test(proposition: &str) {
     if err { return }
 
     variant_num = 0;
-    let (t, values) = replace_literals(&mut tokens);
+    let (t, values) = replace_literals(&mut tokens, false);
     for tt in &t {
         println!("{:?}", tt);
     }

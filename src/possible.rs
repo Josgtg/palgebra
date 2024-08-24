@@ -19,7 +19,7 @@ pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> St
     String::new()
 }
 
-pub fn replace_literals(tokens: &mut Vec<Token>) -> (Vec<Vec<Token>>, Option<Vec<Vec<(char, bool)>>>) {
+pub fn replace_literals(tokens: &mut Vec<Token>, close: bool) -> (Vec<Vec<Token>>, Option<Vec<Vec<(char, bool)>>>) {
     // Returns a vec with all possible values for every variable and another vec with those values
     // p & q -> [[True, And, True], [True, And, False], [False, And, True], [False, And, False]]
     //          [[(p, true), (q, true)]. [(p, true), (q, false)], [(p, false), (q, true)] [...]]
@@ -28,7 +28,7 @@ pub fn replace_literals(tokens: &mut Vec<Token>) -> (Vec<Vec<Token>>, Option<Vec
         if let Token::Sentence(_) = t { counter += 1; }
     }
     if counter > 10 {
-        errors::fatal("too many variables (more than 2048 or 2^12 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1);
+        errors::fatal("too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1, !close);
         return (Vec::new(), None)
     }
 
