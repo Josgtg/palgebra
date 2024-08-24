@@ -16,7 +16,7 @@ fn welcome() {
     let mut message: String = String::new();
     message += "----------------------------\nSymbol list:\n";
     message += "and: &\nor: |\nnot: !\nif and only if: ~\nif, then: >\n----------------------------\n";
-    message += "0 and 1 or \"false\" and \"true\", respectively are considered literal simple propositions\n";
+    message += "0 and 1 or \"false\" and \"true\" respectively are considered literal simple propositions\n";
     message += "Any alphabetical letter will be interpreted as a variable simple proposition and all its possible values will be evaluated\n";
     message += "You can group using parenthesis\n";
     println!("{}", message);
