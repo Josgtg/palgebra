@@ -157,10 +157,8 @@ impl Parser {
             return Expr::Literal(self.advance_owned());
         }
 
-        if self.peek() == &Token::RightParen {
-            if self.open_parenthesis == 0 {
-                self.error("closing parenthesis does not have a match", 0, self.idx);
-            }
+        if self.peek() == &Token::RightParen && self.open_parenthesis == 0 {
+            self.error("closing parenthesis does not have a match", 0, self.idx);
         }
 
         Expr::Null
@@ -211,8 +209,9 @@ impl Parser {
                 return
             }
             if self.peek() == &Token::RightParen {
-                if self.open_parenthesis > 0 { self.open_parenthesis -= 1; }
-                else {
+                if self.open_parenthesis > 0 {
+                    self.open_parenthesis -= 1;
+                } else {
                     self.error = true;
                     errors::report("closing parenthesis does not have a match", 0, self.line, (self.idx + 1) as u32);
                 }

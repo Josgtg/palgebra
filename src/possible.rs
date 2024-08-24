@@ -78,7 +78,7 @@ fn transfrom_literals(tokens: &mut Vec<Token>, values: &mut Vec<(char, bool)>) -
     true_values.push((curr_char, true));
     transform_result = transfrom_literals(&mut true_variant, &mut true_values);
     // We call this function recursively with the vec that has already replace the variable for a "true", in this case
-    if let None = transform_result {
+    if transform_result.is_none() {
         // No more variables to replace, so we return the current vector
         true_tree = vec![true_variant];
         values_true_tree = vec![true_values];
@@ -88,7 +88,7 @@ fn transfrom_literals(tokens: &mut Vec<Token>, values: &mut Vec<(char, bool)>) -
 
     false_values.push((curr_char, false));
     transform_result = transfrom_literals(&mut false_variant, &mut false_values);
-    if let None = transform_result {
+    if transform_result.is_none() {
         false_tree = vec![false_variant];
         values_false_tree = vec![false_values];
     } else {

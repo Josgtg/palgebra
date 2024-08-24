@@ -1,12 +1,12 @@
-use crate::grammar::Expr;
+use crate::grammar::Expr;   
 use crate::token::Token;
 
 
-pub fn interpret(proposition: Box<Expr>) -> bool {
-    match *proposition {
-        Expr::Grouping(expr) => interpret(expr),
-        Expr::Binary(left, op, right) => binary(left, op, right),
-        Expr::Unary(op, right) => unary(op, right),
+pub fn interpret(proposition: Expr) -> bool {
+    match proposition {
+        Expr::Grouping(expr) => interpret(*expr),
+        Expr::Binary(left, op, right) => binary(*left, op, *right),
+        Expr::Unary(op, right) => unary(op, *right),
         Expr::Literal(t) => literal(t),
         // Should never get here
         _ => false
@@ -14,11 +14,10 @@ pub fn interpret(proposition: Box<Expr>) -> bool {
 }
 
 fn literal(t: Token) -> bool {
-    if t == Token::True { true }
-    else { false }
+    t == Token::True
 }
 
-fn binary(left: Box<Expr>, op: Token, right: Box<Expr>) -> bool {
+fn binary(left: Expr, op: Token, right: Expr) -> bool {
     match op {
         Token::And => interpret(left) && interpret(right),
         Token::Or => interpret(left) || interpret(right),
@@ -29,7 +28,7 @@ fn binary(left: Box<Expr>, op: Token, right: Box<Expr>) -> bool {
     }
 }
 
-fn unary(op: Token, right: Box<Expr>) -> bool {
+fn unary(op: Token, right: Expr) -> bool {
     match op {
         Token::Not => !interpret(right),
         // Should never get here
@@ -38,20 +37,11 @@ fn unary(op: Token, right: Box<Expr>) -> bool {
 }
 
 fn if_only_if(l: bool, r: bool) -> bool {
-    if l {
-        if r { true }
-        else { false }
-    }
-    else { 
-        if r { false }
-        else { true }
-    }   
+    if l { r }
+    else { !r }
 }
 
 fn if_then(l: bool, r: bool) -> bool {
-    if l {
-        if r { true }
-        else { false }
-    }
+    if l { r }
     else { true }
 }

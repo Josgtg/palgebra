@@ -58,14 +58,14 @@ fn interactive() {
         }
 
         let res_scan_tokens= scanner::scan(&proposition, i as u32);
-        if let Err(_) = res_scan_tokens {
+        if res_scan_tokens.is_err() {
             err = true;
             tokens = res_scan_tokens.unwrap_err();
         } else {
             tokens = res_scan_tokens.unwrap();
         }
 
-        if let Err(_) = parser::parse(tokens.clone(), i as u32) { continue }
+        if parser::parse(tokens.clone(), i as u32).is_err() { continue }
         if err { continue }
 
         variant_num = 0;
@@ -74,10 +74,10 @@ fn interactive() {
             expr = parser::parse(variant, i as u32).unwrap();
             possible = print_possible(&values, variant_num);
             if !possible.is_empty() { println!("{}", possible); }
-            colorize(0, interpreter::interpret(expr));
-            i += 1;
+            colorize(0, interpreter::interpret(*expr));
             variant_num += 1;
         }
+        i += 1;
     }
 }
 
@@ -110,13 +110,13 @@ fn from_file(path: &str) {
         counter_counter += counter;
     }
 
-    if (len_divided * 2^counter_counter as usize) > 1024 {
+    if (len_divided * (2^counter_counter) as usize) > 1024 {
         errors::fatal("too many variables (more than 2048 or 2^12 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1);
         return
     }
 
     for (i, mut tokens) in divided.into_iter().enumerate() {
-        if let Err(_) = parser::parse(tokens.clone(), (i + 1) as u32) { continue; }
+        if parser::parse(tokens.clone(), (i + 1) as u32).is_err() { continue; }
         if err { continue }
 
         let (t, values) = replace_literals(&mut tokens);
@@ -125,7 +125,7 @@ fn from_file(path: &str) {
             expr = parser::parse(variant, (i + 1) as u32).unwrap();
             possible = print_possible(&values, variant_num);
             if !possible.is_empty() { println!("{}", possible); }
-            colorize((i + 1) as u32, interpreter::interpret(expr));
+            colorize((i + 1) as u32, interpreter::interpret(*expr));
             variant_num += 1;
         }
     }
@@ -135,21 +135,19 @@ fn _test(proposition: &str) {
     let mut err: bool;
     let mut variant_num: usize;
     let mut tokens: Vec<token::Token>;
-    let mut i: usize = 1;
     err = false;
 
-    if proposition.is_empty() { return }
-    else if proposition.eq("exit") { return }
+    if proposition.is_empty() || proposition.eq("exit") { return }
 
     let res_scan_tokens= scanner::scan(&proposition, 1);
-    if let Err(_) = res_scan_tokens {
+    if res_scan_tokens.is_err() {
         err = true;
         tokens = res_scan_tokens.unwrap_err();
     } else {
         tokens = res_scan_tokens.unwrap();
     }
 
-    if let Err(_) = parser::parse(tokens.clone(), i as u32) { return }
+    if parser::parse(tokens.clone(), 1).is_err() { return }
     if err { return }
 
     variant_num = 0;
@@ -159,10 +157,9 @@ fn _test(proposition: &str) {
     }
     for variant in t {
         println!("{}", variant_num);
-        if let Ok(expr) = parser::parse(variant, i as u32) {
+        if let Ok(expr) = parser::parse(variant, 1) {
             println!("{}", print_possible(&values, variant_num));
-            colorize(0, interpreter::interpret(expr));
-            i += 1;
+            colorize(0, interpreter::interpret(*expr));
         }
         variant_num += 1;
     }

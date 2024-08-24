@@ -10,12 +10,10 @@ pub fn colorize(i: u32, b: bool) {
         } else {
             println!("\x1b[91m{}\x1b[0m", b);
         }
-    } else {
-        if b {
+    } else if b {
             println!("{}: \x1b[92m{}\x1b[0m", i, b);
-        } else {
-            println!("{}: \x1b[91m{}\x1b[0m", i, b);
-        }
+    } else {
+        println!("{}: \x1b[91m{}\x1b[0m", i, b);
     }
 }
 
