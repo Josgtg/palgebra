@@ -11,7 +11,7 @@ pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> St
             } else {
                 colored = "\x1b[91mfalse\x1b[0m";
             }
-            message.push_str(&format!("{}: {} \x1b[90m|\x1b[0m ", v.0, colored))
+            message.push_str(&format!("{}: {} \x1b[2m|\x1b[0m ", v.0, colored))
         }
         // removing the trailing " |", for some reason, since it's colored it takes 16 characters
         return String::from(&message[0..(message.len() - 15)]);

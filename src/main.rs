@@ -79,7 +79,7 @@ fn interactive() {
             expr = parser::parse(variant, i as u32).unwrap();
             possible = print_possible(&values, variant_num);
             if !possible.is_empty() { println!("{}", possible); }
-            colorize(0, interpreter::interpret(*expr));
+            colorize(interpreter::interpret(*expr));
             variant_num += 1;
         }
         i += 1;
@@ -87,52 +87,39 @@ fn interactive() {
 }
 
 fn from_file(path: &str) {
+    let mut err: bool;
     let mut expr: Box<grammar::Expr>;
     let mut possible: String;
     let mut variant_num: usize;
-    let mut err: bool = false;
-    let scan_tokens: Vec<token::Token>;
+    let mut scan_tokens: Vec<token::Token>;
 
-    let proposition = utils::read_expression_from_file(path);
+    let whole_proposition = utils::read_expression_from_file(path);
+    
+    let divided = divide_proposition(whole_proposition);
 
-    let res_scan_tokens= scanner::scan(&proposition, 1);
-    if let Err(_) = res_scan_tokens {
-        err = true;
-        scan_tokens = res_scan_tokens.unwrap_err();
-    } else {
-        scan_tokens = res_scan_tokens.unwrap();
-    }
-
-    let divided = divide_tokens(scan_tokens);
-    let len_divided = divided.len();
-    let mut counter_counter: u32 = 0;
-    for tokens in divided.iter() {
-        let mut counter: u32 = 0;
-        for t in tokens.iter() {
-            if let Token::Sentence(_) = t { counter += 1; }
+    for (i, proposition) in divided.into_iter().enumerate() {
+        println!("Proposition: {}", &proposition);
+        err = false;
+        let res_scan_tokens= scanner::scan(&proposition, 1);
+        if let Err(_) = res_scan_tokens {
+            err = true;
+            scan_tokens = res_scan_tokens.unwrap_err();
+        } else {
+            scan_tokens = res_scan_tokens.unwrap();
         }
-
-        counter_counter += counter;
-    }
-
-    if (len_divided * (2^counter_counter) as usize) > 1024 {
-        errors::fatal("too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1, true);
-        return
-    }
-
-    for (i, mut tokens) in divided.into_iter().enumerate() {
-        if parser::parse(tokens.clone(), (i + 1) as u32).is_err() { continue; }
+        if parser::parse(scan_tokens.clone(), (i + 1) as u32).is_err() { println!(); continue; }
         if err { continue }
 
-        let (t, values) = replace_literals(&mut tokens, false);
+        let (t, values) = replace_literals(&mut scan_tokens, false);
         variant_num = 0;
         for variant in t {
             expr = parser::parse(variant, (i + 1) as u32).unwrap();
             possible = print_possible(&values, variant_num);
-            if !possible.is_empty() { println!("{}", possible); }
-            colorize((i + 1) as u32, interpreter::interpret(*expr));
+            if !possible.is_empty() { println!("{}\x1b[0m", possible); }
+            colorize(interpreter::interpret(*expr));
             variant_num += 1;
         }
+        println!();
     }
 }
 
@@ -169,7 +156,7 @@ fn _test(proposition: &str) {
         println!("{}", variant_num);
         if let Ok(expr) = parser::parse(variant, 1) {
             println!("{}", print_possible(&values, variant_num));
-            colorize(0, interpreter::interpret(*expr));
+            colorize(interpreter::interpret(*expr));
         }
         variant_num += 1;
     }

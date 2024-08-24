@@ -12,7 +12,7 @@ mod tests {
         println!("{:?}", tokens);
         let expr = parse(tokens, 1);
         println!("{}", print_ast(expr.clone().unwrap()));
-        let res = interpret(expr.unwrap());
+        let res = interpret(*expr.unwrap());
 
         assert_eq!(res, goal);
     }
