@@ -22,7 +22,7 @@ pub fn read_expression_from_file(path: &str) -> String {
     if let Ok(s) = proposition {
         return s;
     }
-    errors::fatal("file could not be read", 3, 1);
+    errors::fatal("file could not be read", 2, 1);
     String::new()
 }
 
