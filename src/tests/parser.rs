@@ -1,6 +1,7 @@
 #[cfg(test)]
 
 mod tests {
+    use crate::token::Token;
     use crate::scanner::scan;
     use crate::parser::parse;
     use crate::tests::ast_printer::print_ast;
@@ -13,11 +14,11 @@ mod tests {
     fn assert_ok(proposition: &str) {
         println!("{}", proposition);
 
-        let (tokens, _, _)= scan(proposition);
+        let tokens = scan(proposition, 1).unwrap();
 
         println!("{:?}", tokens);
 
-        let expr = parse(tokens);
+        let expr = parse(tokens, 1);
 
         if let Err(_) = expr {
             panic!();
@@ -29,11 +30,17 @@ mod tests {
     fn assert_err(proposition: &str) {
         println!("{}", proposition);
 
-        let (tokens, _, _) = scan(proposition);
+        let tokens: Vec<Token>;
+        let res_tokens = scan(proposition, 1);
+        if let Err(_) = res_tokens {
+            tokens = res_tokens.unwrap_err();
+        } else {
+            tokens = res_tokens.unwrap();
+        }
 
         println!("{:?}", tokens);
 
-        if let Ok(expr) = parse(tokens) {
+        if let Ok(expr) = parse(tokens, 1) {
             debug(expr);
             panic!();
         }

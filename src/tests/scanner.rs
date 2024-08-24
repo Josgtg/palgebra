@@ -11,15 +11,16 @@ mod tests {
 
     fn assert_ok(proposition: &str) {
         println!("{}", proposition);
-        let (tokens, _, err) = scan(proposition);
-        if err { panic!() }
-        println!("{:?}", tokens);
+        let tokens = scan(proposition, 1);
+        if let Ok(tokens) = tokens {
+            println!("{:?}", tokens);
+        } else { panic!() }
     }
 
     fn assert_err(proposition: &str) {
         println!("{}", proposition);
-        let (tokens, _, err) = scan(proposition);
-        if !err {
+        let tokens = scan(proposition, 1);
+        if let Ok(tokens) = tokens {
             println!("{:?}", tokens);
             panic!();
         }

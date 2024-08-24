@@ -10,11 +10,11 @@ mod tests {
 
     fn test(proposition: &str, goal: bool) {
         println!("{}", proposition);
-        let (tokens, _, _) = scan(proposition);
+        let tokens = scan(proposition, 1).unwrap();
         println!("{:?}", tokens);
-        let expr = parse(tokens);
+        let expr = parse(tokens, 1);
         println!("{}", print_ast(expr.clone().unwrap()));
-        let res = interpret(HashMap::new(), expr.unwrap());
+        let res = interpret(expr.unwrap());
 
         assert_eq!(res, goal);
     }

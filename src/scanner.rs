@@ -2,9 +2,13 @@ use crate::token::Token;
 use crate::errors;
 
 
-pub fn scan(proposition: &str) -> (Vec<Token>, Vec<char>, bool) {
-    let mut scanner = Scanner::new();
-    scanner.scan(proposition)
+pub fn scan(proposition: &str, line: u32) -> Result<Vec<Token>, Vec<Token>> {
+    let mut scanner = Scanner::new(line);
+    let tokens = scanner.scan(proposition);
+    if scanner.error {
+        return Err(tokens)
+    }
+    Ok(tokens)
 }
 
 
@@ -24,19 +28,19 @@ struct Scanner {
 }
 
 impl Scanner {
-    fn new() -> Self {
+    fn new(line: u32) -> Self {
         Scanner {
             proposition: Vec::new(),
             simples: Vec::new(),
             tokens: Vec::new(),
             error: false,
-            line: 1,
+            line,
             col: 1,
             idx: 0
         }
     }
 
-    fn scan(&mut self, proposition: &str) -> (Vec<Token>, Vec<char>, bool) {
+    fn scan(&mut self, proposition: &str) -> Vec<Token> {
         self.proposition = proposition.chars().collect();
         while !self.is_at_end() {
             if self.match_new_line() { continue; }
@@ -48,7 +52,7 @@ impl Scanner {
         }
 
         if self.previous() == '\n' { self.tokens.pop(); }
-        (self.tokens.clone(), self.simples.clone(), self.error)
+        self.tokens.clone()
     }
 
     fn match_new_line(&mut self) -> bool {
