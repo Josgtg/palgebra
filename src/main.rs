@@ -65,6 +65,11 @@ fn interactive() {
             tokens = res_scan_tokens.unwrap();
         }
 
+        if tokens[tokens.len() - 1] == Token::Comment {
+            tokens.pop();
+            if tokens.len() == 0 { continue }
+        }
+
         if parser::parse(tokens.clone(), i as u32).is_err() { continue }
         if err { continue }
 
@@ -145,6 +150,11 @@ fn _test(proposition: &str) {
         tokens = res_scan_tokens.unwrap_err();
     } else {
         tokens = res_scan_tokens.unwrap();
+    }
+
+    if tokens[tokens.len() - 1] == Token::Comment {
+        tokens.pop();
+        if tokens.len() == 0 { return }
     }
 
     if parser::parse(tokens.clone(), 1).is_err() { return }
