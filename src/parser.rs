@@ -2,10 +2,10 @@ use crate::{
     errors::{
         self,
         Error::{self, *},
-    }, grammar::Expr, structs::Expression, token::Token
+    }, grammar::Expr, token::Token, types::TokenSequence
 };
 
-pub fn parse(tokens: Vec<Token>, line: u32) -> Result<Expression, ()> {
+pub fn parse(tokens: TokenSequence, line: u32) -> Result<Expr, ()> {
     let mut parser = Parser::new(tokens, line);
     parser.parse()
 }
@@ -26,7 +26,7 @@ fn is_operator_token(token: &Token) -> bool {
 }
 
 pub struct Parser {
-    pub tokens: Vec<Token>,
+    pub tokens: TokenSequence,
     pub error: bool,
     open_parenthesis: u32,
     line: u32,
@@ -34,7 +34,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>, line: u32) -> Self {
+    pub fn new(tokens: TokenSequence, line: u32) -> Self {
         Parser {
             tokens,
             error: false,
@@ -44,7 +44,7 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Expression, ()> {
+    pub fn parse(&mut self) -> Result<Expr, ()> {
         let expression = self.expression();
         while !self.is_at_end() {
             self.error = true;
@@ -54,7 +54,7 @@ impl Parser {
         if self.error {
             Err(())
         } else {
-            Ok(Expression::new(expression))
+            Ok(expression)
         }
     }
 

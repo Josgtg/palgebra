@@ -1,5 +1,6 @@
 use crate::errors;
 use crate::token::Token;
+use crate::types::TokenSequence;
 
 pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> String {
     let mut message = String::new();
@@ -20,9 +21,9 @@ pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> St
 }
 
 pub fn replace_literals(
-    tokens: &mut Vec<Token>,
+    tokens: &mut TokenSequence,
     close: bool,
-) -> (Vec<Vec<Token>>, Option<Vec<Vec<(char, bool)>>>) {
+) -> (Vec<TokenSequence>, Option<Vec<Vec<(char, bool)>>>) {
     // Returns a vec with all possible values for every variable and another vec with those values
     // p & q -> [[True, And, True], [True, And, False], [False, And, True], [False, And, False]]
     //          [[(p, true), (q, true)]. [(p, true), (q, false)], [(p, false), (q, true)] [...]]
@@ -56,22 +57,22 @@ pub fn replace_literals(
 }
 
 fn transfrom_literals(
-    tokens: &mut Vec<Token>,
+    tokens: &mut TokenSequence,
     values: &mut Vec<(char, bool)>,
-) -> Option<(Vec<Vec<Token>>, Vec<Vec<(char, bool)>>)> {
+) -> Option<(Vec<TokenSequence>, Vec<Vec<(char, bool)>>)> {
     // Creates two vecs, one with the "true" variant of the variable, and other with the "false" variant.
     // It calls itself recursively untill all variables are replaced.
 
-    let mut transform_result: Option<(Vec<Vec<Token>>, Vec<Vec<(char, bool)>>)>;
+    let mut transform_result: Option<(Vec<TokenSequence>, Vec<Vec<(char, bool)>>)>;
     let mut curr_char: char = '\0';
 
-    let mut true_tree: Vec<Vec<Token>>;
-    let mut true_variant: Vec<Token> = tokens.clone();
+    let mut true_tree: Vec<TokenSequence>;
+    let mut true_variant: TokenSequence = tokens.clone();
     let mut values_true_tree: Vec<Vec<(char, bool)>>;
     let mut true_values: Vec<(char, bool)> = values.clone();
 
-    let mut false_tree: Vec<Vec<Token>>;
-    let mut false_variant: Vec<Token> = tokens.clone();
+    let mut false_tree: Vec<TokenSequence>;
+    let mut false_variant: TokenSequence = tokens.clone();
     let mut values_false_tree: Vec<Vec<(char, bool)>>;
     let mut false_values: Vec<(char, bool)> = values.clone();
 

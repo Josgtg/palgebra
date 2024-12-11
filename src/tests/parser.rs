@@ -3,10 +3,10 @@
 mod tests {
     use crate::parser::parse;
     use crate::scanner::scan;
-    use crate::structs::Expression;
-    use crate::token::Token;
+    use crate::grammar::Expr;
+    use crate::types::TokenSequence;
 
-    fn debug(expr: Expression) {
+    fn debug(expr: &Expr) {
         println!("{}", expr);
     }
 
@@ -23,13 +23,13 @@ mod tests {
             panic!();
         }
 
-        debug(expr.unwrap());
+        debug(expr.as_ref().unwrap());
     }
 
     fn assert_err(proposition: &str) {
         println!("{}", proposition);
 
-        let tokens: Vec<Token>;
+        let tokens: TokenSequence;
         let res_tokens = scan(proposition, 1);
         if let Err(_) = res_tokens {
             tokens = res_tokens.unwrap_err();
@@ -40,7 +40,7 @@ mod tests {
         println!("{:?}", tokens);
 
         if let Ok(expr) = parse(tokens, 1) {
-            debug(expr);
+            debug(&expr);
             panic!();
         }
     }

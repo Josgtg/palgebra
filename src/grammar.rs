@@ -1,6 +1,10 @@
 #![allow(warnings)]
 
+use std::fmt::Display;
+
 use crate::token::Token;
+use crate::tests::ast_printer;
+
 #[derive(Eq, PartialEq, Clone)]
 pub enum Expr {
     Literal(Token),
@@ -21,7 +25,7 @@ impl Expr {
     }
 
     pub fn operation(operator: Token) -> Self {
-        Expr::Literal(operator)
+        Expr::Operation(operator)
     }
 
     pub fn binary(left: Expr, operator: Token, right: Expr) -> Self {
@@ -38,5 +42,11 @@ impl Expr {
 
     pub fn is_null(&self) -> bool {
         self == &Expr::Null
+    }
+}
+
+impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&ast_printer::print_ast(self))
     }
 }

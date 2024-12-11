@@ -7,9 +7,9 @@ mod parser;
 mod possible;
 mod scanner;
 mod services;
-mod structs;
 mod tests;
 mod token;
+mod types;
 
 use std::path::PathBuf;
 
@@ -17,7 +17,7 @@ use clap::Parser;
 use cli::Cli;
 use possible::*;
 use services::reader;
-use structs::Expression;
+use grammar::Expr;
 use token::Token;
 
 fn main() {
@@ -31,7 +31,7 @@ fn main() {
 
 fn interactive() {
     let mut err: bool;
-    let mut expr: Expression;
+    let mut expr: Expr;
     let mut variant_num: usize;
     let mut possible: String;
     let mut proposition: String;
@@ -58,8 +58,6 @@ fn interactive() {
         } else {
             tokens = res_scan_tokens.unwrap();
         }
-
-        println!("{:?}", tokens);
         
         if tokens[tokens.len() - 1] == Token::Comment {
             tokens.pop();
@@ -68,14 +66,12 @@ fn interactive() {
             }
         }
         
-        let expres = parser::parse(tokens.clone(), i as u32);
-        if expres.is_err() {
+        if parser::parse(tokens.clone(), i as u32).is_err() {
             continue;
         }
         if err {
             continue;
         }
-        println!("{}", expres.unwrap());
         
         variant_num = 0;
         let (t, values) = replace_literals(&mut tokens, true);
@@ -95,7 +91,7 @@ fn interactive() {
 
 fn from_file(path: PathBuf) {
     let mut err: bool;
-    let mut expr: Expression;
+    let mut expr: Expr;
     let mut possible: String;
     let mut variant_num: usize;
     let mut scan_tokens: Vec<token::Token>;

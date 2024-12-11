@@ -1,7 +1,8 @@
 use crate::errors::{self, Error::SyntaxError};
 use crate::token::Token;
+use crate::types::TokenSequence;
 
-pub fn scan(proposition: &str, line: u32) -> Result<Vec<Token>, Vec<Token>> {
+pub fn scan(proposition: &str, line: u32) -> Result<TokenSequence, TokenSequence> {
     let mut scanner = Scanner::new(line);
     let tokens = scanner.scan(proposition);
     if scanner.error {
@@ -16,7 +17,7 @@ fn ignore(c: char) -> bool {
 
 struct Scanner {
     proposition: Vec<char>,
-    tokens: Vec<Token>,
+    tokens: TokenSequence,
     error: bool,
     line: u32,
     col: u32,
@@ -35,7 +36,7 @@ impl Scanner {
         }
     }
 
-    fn scan(&mut self, proposition: &str) -> Vec<Token> {
+    fn scan(&mut self, proposition: &str) -> TokenSequence {
         self.proposition = proposition.chars().collect();
         while !self.is_at_end() {
             if self.match_new_line() {
