@@ -7,33 +7,23 @@ mod errors;
 mod grammar;
 mod utils;
 mod possible;
+mod cli;
 
+use std::path::PathBuf;
+
+use clap::Parser;
 use utils::*;
 use possible::*;
 use token::Token;
-
-fn welcome() {
-    let mut message: String = String::new();
-    message += "----------------------------\nSymbol list:\n";
-    message += "and: &\nor: |\nnot: !\nif and only if: ~\nif, then: >\n----------------------------\n";
-    message += "0 and 1 or \"false\" and \"true\" respectively are considered literal simple propositions\n";
-    message += "Any alphabetical letter will be interpreted as a variable simple proposition and all its possible values will be evaluated\n";
-    message += "You can group using parenthesis\n";
-    println!("{}", message);
-}
+use cli::Cli;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() == 1 {
+    let args = Cli::parse();
+    if let Some(path) = args.read_path {
+        from_file(path);
+    } else {
         interactive();
-        return
     }
-    if args.len() == 2 {
-        from_file(&args[1]);
-        return
-    }
-    println!("usage: plogic <file_name>\nIf no file is given, an interactive session will start");
-    std::process::exit(64);
 }
 
 fn interactive() {
@@ -45,7 +35,6 @@ fn interactive() {
     let mut tokens: Vec<token::Token>;
     let mut i: usize = 1;
 
-    welcome();
     loop {
         err = false;
         proposition = read_expression_from_user();
@@ -86,7 +75,7 @@ fn interactive() {
     }
 }
 
-fn from_file(path: &str) {
+fn from_file(path: PathBuf) {
     let mut err: bool;
     let mut expr: Box<grammar::Expr>;
     let mut possible: String;

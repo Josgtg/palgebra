@@ -1,16 +1,17 @@
 use crate::errors;
 use std::fs;
 use std::io::{self, BufRead, Write};
+use std::path::PathBuf;
 
 pub fn colorize(b: bool) {
     if b {
-            println!("\x1b[92m{}\x1b[0m", b);
+        println!("\x1b[92m{}\x1b[0m", b);
     } else {
         println!("\x1b[91m{}\x1b[0m", b);
     }
 }
 
-pub fn read_expression_from_file(path: &str) -> String {
+pub fn read_expression_from_file(path: PathBuf) -> String {
     let proposition = fs::read_to_string(path);
     if let Ok(s) = proposition {
         return s;
