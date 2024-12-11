@@ -1,8 +1,8 @@
 use crate::{
-    errors::{
-        self,
-        Error::{self, *},
-    }, grammar::Expr, token::Token, types::TokenSequence
+    errors::{self, Error},
+    grammar::Expr,
+    token::Token,
+    types::TokenSequence,
 };
 
 pub fn parse(tokens: TokenSequence, line: u32) -> Result<Expr, ()> {
@@ -69,7 +69,7 @@ impl Parser {
             if expression.is_null() {
                 self.error(
                     "missing expression on left side of operation",
-                    SyntaxError,
+                    Error::Syntax,
                     start_idx,
                 );
                 continue;
@@ -83,7 +83,7 @@ impl Parser {
 
             if right.is_null() {
                 if is_operator_token(self.peek()) {
-                    self.error("operators are next to each other", SyntaxError, self.idx);
+                    self.error("operators are next to each other", Error::Syntax, self.idx);
                     continue;
                 }
 
@@ -91,18 +91,18 @@ impl Parser {
                     if self.open_parenthesis > 0 {
                         self.open_parenthesis -= 1;
                     } else {
-                        self.error("unmatched closing parenthesis", SyntaxError, self.idx);
+                        self.error("unmatched closing parenthesis", Error::Syntax, self.idx);
                         continue;
                     }
                 }
 
                 if self.match_token(&Token::Invalid) {
                     self.error = true;
-                    right = self.unary();  // right
+                    right = self.unary(); // right
                 } else {
                     self.error(
                         "missing expression on right side of operation",
-                        SyntaxError,
+                        Error::Syntax,
                         start_idx,
                     );
                     continue;
@@ -125,7 +125,7 @@ impl Parser {
         if self.peek() == &Token::Not {
             self.error(
                 "not operator is in an invalid position",
-                SyntaxError,
+                Error::Syntax,
                 self.idx,
             );
         }
@@ -141,7 +141,7 @@ impl Parser {
             if right.is_null() {
                 self.error(
                     "missing expression on right side of negation",
-                    SyntaxError,
+                    Error::Syntax,
                     start_idx,
                 );
             }
@@ -156,12 +156,12 @@ impl Parser {
 
         if is_literal_value_token(self.previous()) {
             if self.peek() == &Token::LeftParen {
-                self.error("grouping in invalid position", SyntaxError, start_idx);
+                self.error("grouping in invalid position", Error::Syntax, start_idx);
             }
             if is_literal_value_token(self.peek()) {
                 self.error(
                     "simple expression is in an invalid position",
-                    SyntaxError,
+                    Error::Syntax,
                     self.idx,
                 );
             }
@@ -174,11 +174,11 @@ impl Parser {
                 if self.match_token(&Token::RightParen) {
                     self.open_parenthesis -= 1;
                 } else {
-                    self.error("expected closing parenthesis", SyntaxError, self.idx);
+                    self.error("expected closing parenthesis", Error::Syntax, self.idx);
                 }
             }
             if expression == Expr::Null {
-                self.error("not an expression", ParseError, start_idx);
+                self.error_unsync("not an expression", Error::Parse, start_idx);
             }
             return Expr::grouping(expression);
         }
@@ -188,11 +188,8 @@ impl Parser {
         }
 
         if self.peek() == &Token::RightParen && self.open_parenthesis == 0 {
-            self.error(
-                "closing parenthesis does not have a match",
-                SyntaxError,
-                self.idx,
-            );
+            self.error = true;
+            self.synchronize();
         }
 
         Expr::null()
@@ -224,12 +221,17 @@ impl Parser {
         false
     }
 
-    // Error handling
+    //  error handling
 
     fn error(&mut self, message: &str, kind: Error, idx: usize) {
         self.error = true;
         errors::scanner(message, kind, self.line, (idx + 1) as u32);
         self.synchronize();
+    }
+
+    fn error_unsync(&mut self, message: &str, kind: Error, idx: usize) {
+        self.error = true;
+        errors::scanner(message, kind, self.line, (idx + 1) as u32);
     }
 
     fn synchronize(&mut self) {
@@ -245,15 +247,14 @@ impl Parser {
             if self.peek() == &Token::LeftParen {
                 return;
             }
-            if self.peek() == &Token::RightParen {
+            if self.match_token(&Token::RightParen) {
                 if self.open_parenthesis > 0 {
                     self.open_parenthesis -= 1;
                 } else {
-                    self.advance();
                     self.error(
                         "closing parenthesis does not have a match",
-                        SyntaxError,
-                        self.idx,
+                        Error::Syntax,
+                        self.idx - 1,
                     );
                 }
             }
@@ -285,13 +286,17 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        if self.is_at_end() { return &Token::Null }
+        if self.is_at_end() {
+            return &Token::Null;
+        }
         self.idx += 1;
         &self.tokens[self.idx - 1]
     }
 
     fn advance_owned(&mut self) -> Token {
-        if self.is_at_end() { return Token::Null }
+        if self.is_at_end() {
+            return Token::Null;
+        }
         self.idx += 1;
         self.tokens[self.idx - 1].clone()
     }

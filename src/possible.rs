@@ -1,8 +1,8 @@
 use crate::errors;
 use crate::token::Token;
-use crate::types::TokenSequence;
+use crate::types::*;
 
-pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> String {
+pub fn print_possible(values: &Option<Vec<LiteralAndBool>>, idx: usize) -> String {
     let mut message = String::new();
     let mut colored: &str;
     if let Some(vv) = values {
@@ -23,10 +23,10 @@ pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> St
 pub fn replace_literals(
     tokens: &mut TokenSequence,
     close: bool,
-) -> (Vec<TokenSequence>, Option<Vec<Vec<(char, bool)>>>) {
+) -> (Vec<TokenSequence>, Option<Vec<LiteralAndBool>>) {
     // Returns a vec with all possible values for every variable and another vec with those values
     // p & q -> [[True, And, True], [True, And, False], [False, And, True], [False, And, False]]
-    //          [[(p, true), (q, true)]. [(p, true), (q, false)], [(p, false), (q, true)] [...]]
+    //          [[(p, true), (q, true)], [(p, true), (q, false)], [(p, false), (q, true)] [...]]
     let mut counter: u32 = 0;
     for t in tokens.iter() {
         if let Token::Sentence(_) = t {
@@ -37,13 +37,13 @@ pub fn replace_literals(
         if close {
             errors::fatal(
                 "too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)",
-                errors::Error::VarAmountError,
+                errors::Error::VarAmount,
                 errors::codes::RUNTIME_ERROR
             );
         } else {
             errors::warn(
                 "too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)",
-                errors::Error::VarAmountError
+                errors::Error::VarAmount
             );
         }
         return (Vec::new(), None);
@@ -58,23 +58,23 @@ pub fn replace_literals(
 
 fn transfrom_literals(
     tokens: &mut TokenSequence,
-    values: &mut Vec<(char, bool)>,
-) -> Option<(Vec<TokenSequence>, Vec<Vec<(char, bool)>>)> {
+    values: &mut LiteralAndBool,
+) -> Option<(Vec<TokenSequence>, Vec<LiteralAndBool>)> {
     // Creates two vecs, one with the "true" variant of the variable, and other with the "false" variant.
     // It calls itself recursively untill all variables are replaced.
 
-    let mut transform_result: Option<(Vec<TokenSequence>, Vec<Vec<(char, bool)>>)>;
+    let mut transform_result: Option<(Vec<TokenSequence>, Vec<LiteralAndBool>)>;
     let mut curr_char: char = '\0';
 
     let mut true_tree: Vec<TokenSequence>;
     let mut true_variant: TokenSequence = tokens.clone();
-    let mut values_true_tree: Vec<Vec<(char, bool)>>;
-    let mut true_values: Vec<(char, bool)> = values.clone();
+    let mut values_true_tree: Vec<LiteralAndBool>;
+    let mut true_values: LiteralAndBool = values.clone();
 
     let mut false_tree: Vec<TokenSequence>;
     let mut false_variant: TokenSequence = tokens.clone();
-    let mut values_false_tree: Vec<Vec<(char, bool)>>;
-    let mut false_values: Vec<(char, bool)> = values.clone();
+    let mut values_false_tree: Vec<LiteralAndBool>;
+    let mut false_values: LiteralAndBool = values.clone();
 
     let mut found_literal: bool = false;
     let mut i: usize = 0;

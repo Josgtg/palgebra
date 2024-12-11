@@ -9,11 +9,7 @@ pub fn read_expression_from_file(path: PathBuf) -> String {
     if let Ok(s) = proposition {
         return s;
     }
-    errors::fatal(
-        "file could not be read",
-        Error::FileError,
-        codes::FILE_ERROR,
-    );
+    errors::fatal("file could not be read", Error::File, codes::FILE_ERROR);
     String::new()
 }
 

@@ -4,19 +4,19 @@ use crate::constants::ansi_codes::*;
 use std::fmt::Display;
 
 pub enum Error {
-    SyntaxError,
-    ParseError,
-    FileError,
-    VarAmountError,
+    Syntax,
+    Parse,
+    File,
+    VarAmount,
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            Error::SyntaxError => "SyntaxError",
-            Error::ParseError => "ParseError",
-            Error::FileError => "FileError",
-            Error::VarAmountError => "VarAmountError",
+            Error::Syntax => "SyntaxError",
+            Error::Parse => "ParseError",
+            Error::File => "FileError",
+            Error::VarAmount => "VarAmountError",
         })
     }
 }

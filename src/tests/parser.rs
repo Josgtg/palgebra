@@ -1,9 +1,9 @@
 #[cfg(test)]
 
 mod tests {
+    use crate::grammar::Expr;
     use crate::parser::parse;
     use crate::scanner::scan;
-    use crate::grammar::Expr;
     use crate::types::TokenSequence;
 
     fn debug(expr: &Expr) {
@@ -19,7 +19,7 @@ mod tests {
 
         let expr = parse(tokens, 1);
 
-        if let Err(_) = expr {
+        if expr.is_err() {
             panic!();
         }
 
@@ -31,7 +31,7 @@ mod tests {
 
         let tokens: TokenSequence;
         let res_tokens = scan(proposition, 1);
-        if let Err(_) = res_tokens {
+        if res_tokens.is_err() {
             tokens = res_tokens.unwrap_err();
         } else {
             tokens = res_tokens.unwrap();

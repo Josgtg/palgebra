@@ -1,4 +1,4 @@
-use crate::errors::{self, Error::SyntaxError};
+use crate::errors::{self, Error};
 use crate::token::Token;
 use crate::types::TokenSequence;
 
@@ -107,7 +107,7 @@ impl Scanner {
                     self.error = true;
                     errors::scanner(
                         &format!("unexpected character \"{}\"", self.previous()),
-                        SyntaxError,
+                        Error::Syntax,
                         self.line,
                         self.col - 1,
                     );

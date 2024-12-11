@@ -2,8 +2,8 @@
 
 use std::fmt::Display;
 
-use crate::token::Token;
 use crate::tests::ast_printer;
+use crate::token::Token;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Expr {
