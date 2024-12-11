@@ -1,14 +1,14 @@
 #[cfg(test)]
 
 mod tests {
-    use crate::token::Token;
-    use crate::scanner::scan;
-    use crate::parser::parse;
-    use crate::tests::ast_printer::print_ast;
     use crate::grammar::Expr;
+    use crate::parser::parse;
+    use crate::scanner::scan;
+    use crate::tests::ast_printer::print_ast;
+    use crate::token::Token;
 
     fn debug(expr: Box<Expr>) {
-        println!("{:?}", print_ast(expr));
+        println!("{:?}", print_ast(&expr));
     }
 
     fn assert_ok(proposition: &str) {
@@ -151,11 +151,11 @@ mod tests {
         assert_err("(p | s) > (~ (p & q))");
     }
 
-    #[test] 
+    #[test]
     fn empty_groups() {
         assert_err("p & (()) s & q");
     }
-    
+
     #[test]
     fn complicated_correct() {
         assert_ok("(p > ((!y & !s) | !(k ~ a)) > (o ~ (!p | p))) ~ l")

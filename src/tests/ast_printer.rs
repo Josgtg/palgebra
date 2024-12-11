@@ -1,13 +1,13 @@
 #![allow(warnings)]
 
-use crate::token::Token;
 use crate::grammar::Expr;
+use crate::token::Token;
 
-pub fn print_ast(expr: Box<Expr>) -> String {
+pub fn print_ast(expr: &Box<Expr>) -> String {
     as_str(expr)
 }
 
-fn parenthezise(name: char, exprs: [Option<Box<Expr>>; 2]) -> String {
+fn parenthezise(name: char, exprs: [Option<&Box<Expr>>; 2]) -> String {
     let mut s = String::new();
     s.push('(');
     s.push(name);
@@ -23,30 +23,30 @@ fn parenthezise(name: char, exprs: [Option<Box<Expr>>; 2]) -> String {
     s
 }
 
-fn as_str(expr: Box<Expr>) -> String {
-    match *expr {
+fn as_str(expr: &Box<Expr>) -> String {
+    match &**expr {
         Expr::Literal(value) => literal(value),
         Expr::Grouping(expr) => grouping(expr),
         Expr::Binary(left, op, right) => binary(left, op, right),
         Expr::Unary(op, right) => unary(op, right),
         Expr::Operation(op) => literal(op),
-        Expr::Null => String::new()
+        Expr::Null => String::new(),
     }
 }
 
-fn literal(value: Token) -> String {
+fn literal(value: &Token) -> String {
     value.as_char().to_string()
 }
 
-fn grouping(expr: Box<Expr>) -> String {
+fn grouping(expr: &Box<Expr>) -> String {
     parenthezise('*', [Some(expr), None])
 }
 
-fn binary(left: Box<Expr>, op: Token, right: Box<Expr>) -> String {
+fn binary(left: &Box<Expr>, op: &Token, right: &Box<Expr>) -> String {
     parenthezise(op.as_char(), [Some(left), Some(right)])
 }
 
-fn unary(op: Token, right: Box<Expr>) -> String {
+fn unary(op: &Token, right: &Box<Expr>) -> String {
     parenthezise(op.as_char(), [Some(right), None])
 }
 
@@ -59,18 +59,14 @@ mod tests {
         let expr = Expr::Binary(
             Box::new(Expr::Unary(
                 Token::Not,
-                Box::new(Expr::Literal(
-                    Token::Sentence('p')
-                ))
+                Box::new(Expr::Literal(Token::Sentence('p'))),
             )),
             Token::And,
-            Box::new(Expr::Grouping(
-                    Box::new(Expr::Literal(
-                        Token::Sentence('q')
-                    ))
-            ))
+            Box::new(Expr::Grouping(Box::new(Expr::Literal(Token::Sentence(
+                'q',
+            ))))),
         );
-        println!("{}", print_ast(Box::new(expr)));
+        println!("{}", print_ast(&Box::new(expr)));
     }
 
     #[test]
@@ -80,25 +76,20 @@ mod tests {
                 Box::new(Expr::Binary(
                     Box::new(Expr::Unary(
                         Token::Not,
-                        Box::new(Expr::Literal(
-                            Token::Sentence('p')
-                        )))),
-                    Token::Or,
-                    Box::new(Expr::Literal(Token::Sentence('p')))
+                        Box::new(Expr::Literal(Token::Sentence('p'))),
                     )),
-                    Token::IfOnlyIf,
-                    Box::new(Expr::Literal(
-                        Token::Sentence('q')
-                ))
+                    Token::Or,
+                    Box::new(Expr::Literal(Token::Sentence('p'))),
+                )),
+                Token::IfOnlyIf,
+                Box::new(Expr::Literal(Token::Sentence('q'))),
             )),
             Token::And,
-            Box::new(Expr::Grouping(
-                    Box::new(Expr::Literal(
-                        Token::Sentence('q')
-                    ))
-            ))
+            Box::new(Expr::Grouping(Box::new(Expr::Literal(Token::Sentence(
+                'q',
+            ))))),
         );
-        println!("{}", print_ast(Box::new(expr)));
+        println!("{}", print_ast(&Box::new(expr)));
     }
 
     #[test]
@@ -108,36 +99,28 @@ mod tests {
                 Box::new(Expr::Binary(
                     Box::new(Expr::Unary(
                         Token::Not,
-                        Box::new(Expr::Literal(
-                            Token::Sentence('p')
-                        )))),
-                    Token::Or,
-                    Box::new(Expr::Literal(Token::Sentence('p')))
+                        Box::new(Expr::Literal(Token::Sentence('p'))),
                     )),
-                    Token::And,
-                    Box::new(Expr::Literal(
-                        Token::Sentence('q')
-                ))
+                    Token::Or,
+                    Box::new(Expr::Literal(Token::Sentence('p'))),
+                )),
+                Token::And,
+                Box::new(Expr::Literal(Token::Sentence('q'))),
             )),
             Token::IfThen,
-            Box::new(Expr::Grouping(
+            Box::new(Expr::Grouping(Box::new(Expr::Binary(
                 Box::new(Expr::Binary(
-                    Box::new(Expr::Binary(
-                        Box::new(Expr::Unary(
-                            Token::Not,
-                            Box::new(Expr::Literal(
-                                Token::Sentence('p')
-                            )))),
-                        Token::Or,
-                        Box::new(Expr::Literal(Token::Sentence('p')))
-                        )),
-                        Token::Or,
-                        Box::new(Expr::Literal(
-                            Token::Sentence('q')
-                    ))
+                    Box::new(Expr::Unary(
+                        Token::Not,
+                        Box::new(Expr::Literal(Token::Sentence('p'))),
+                    )),
+                    Token::Or,
+                    Box::new(Expr::Literal(Token::Sentence('p'))),
                 )),
-            ))
+                Token::Or,
+                Box::new(Expr::Literal(Token::Sentence('q'))),
+            )))),
         );
-        println!("{}", print_ast(Box::new(expr)));
+        println!("{}", print_ast(&Box::new(expr)));
     }
 }

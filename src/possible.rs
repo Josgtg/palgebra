@@ -19,13 +19,18 @@ pub fn print_possible(values: &Option<Vec<Vec<(char, bool)>>>, idx: usize) -> St
     String::new()
 }
 
-pub fn replace_literals(tokens: &mut Vec<Token>, close: bool) -> (Vec<Vec<Token>>, Option<Vec<Vec<(char, bool)>>>) {
+pub fn replace_literals(
+    tokens: &mut Vec<Token>,
+    close: bool,
+) -> (Vec<Vec<Token>>, Option<Vec<Vec<(char, bool)>>>) {
     // Returns a vec with all possible values for every variable and another vec with those values
     // p & q -> [[True, And, True], [True, And, False], [False, And, True], [False, And, False]]
     //          [[(p, true), (q, true)]. [(p, true), (q, false)], [(p, false), (q, true)] [...]]
     let mut counter: u32 = 0;
     for t in tokens.iter() {
-        if let Token::Sentence(_) = t { counter += 1; }
+        if let Token::Sentence(_) = t {
+            counter += 1;
+        }
     }
     if counter > 10 {
         if close {
@@ -40,7 +45,7 @@ pub fn replace_literals(tokens: &mut Vec<Token>, close: bool) -> (Vec<Vec<Token>
                 errors::Error::VarAmountError
             );
         }
-        return (Vec::new(), None)
+        return (Vec::new(), None);
     }
 
     if let Some(list) = transfrom_literals(tokens, &mut Vec::new()) {
@@ -50,10 +55,13 @@ pub fn replace_literals(tokens: &mut Vec<Token>, close: bool) -> (Vec<Vec<Token>
     }
 }
 
-fn transfrom_literals(tokens: &mut Vec<Token>, values: &mut Vec<(char, bool)>) -> Option<(Vec<Vec<Token>>, Vec<Vec<(char, bool)>>)> {
+fn transfrom_literals(
+    tokens: &mut Vec<Token>,
+    values: &mut Vec<(char, bool)>,
+) -> Option<(Vec<Vec<Token>>, Vec<Vec<(char, bool)>>)> {
     // Creates two vecs, one with the "true" variant of the variable, and other with the "false" variant.
     // It calls itself recursively untill all variables are replaced.
-    
+
     let mut transform_result: Option<(Vec<Vec<Token>>, Vec<Vec<(char, bool)>>)>;
     let mut curr_char: char = '\0';
 
@@ -84,7 +92,9 @@ fn transfrom_literals(tokens: &mut Vec<Token>, values: &mut Vec<(char, bool)>) -
         i += 1;
     }
 
-    if !found_literal { return None }
+    if !found_literal {
+        return None;
+    }
 
     true_values.push((curr_char, true));
     transform_result = transfrom_literals(&mut true_variant, &mut true_values);

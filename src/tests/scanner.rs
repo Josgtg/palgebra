@@ -1,7 +1,7 @@
 #[cfg(test)]
 
 mod tests {
-    
+
     use crate::scanner::scan;
     use crate::token::Token;
 
@@ -15,7 +15,9 @@ mod tests {
         let tokens = scan(proposition, 1);
         if let Ok(tokens) = tokens {
             println!("{:?}", tokens);
-        } else { panic!() }
+        } else {
+            panic!()
+        }
     }
 
     fn assert_err(proposition: &str) {

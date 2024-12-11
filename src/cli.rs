@@ -21,5 +21,5 @@ pub struct Cli {
 
     /// Just simplify a proposition instead of also evaluating it
     #[arg(short, long)]
-    pub simplify: bool
+    pub simplify: bool,
 }

@@ -1,5 +1,5 @@
-mod ast_printer;
+mod all_possible;
+pub mod ast_printer;
+mod interpreter;
 mod parser;
 mod scanner;
-mod interpreter;
-mod all_possible;
