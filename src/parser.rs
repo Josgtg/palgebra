@@ -2,12 +2,10 @@ use crate::{
     errors::{
         self,
         Error::{self, *},
-    },
-    grammar::Expr,
-    token::Token,
+    }, grammar::Expr, structs::Expression, token::Token
 };
 
-pub fn parse(tokens: Vec<Token>, line: u32) -> Result<Box<Expr>, ()> {
+pub fn parse(tokens: Vec<Token>, line: u32) -> Result<Expression, ()> {
     let mut parser = Parser::new(tokens, line);
     parser.parse()
 }
@@ -46,32 +44,31 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Box<Expr>, ()> {
-        let proposition = self.proposition();
-
+    pub fn parse(&mut self) -> Result<Expression, ()> {
+        let expression = self.expression();
         while !self.is_at_end() {
             self.error = true;
-            self.proposition();
+            self.expression();
         }
 
         if self.error {
             Err(())
         } else {
-            Ok(Box::new(proposition))
+            Ok(Expression::new(expression))
         }
     }
 
     // Building the tree
 
-    fn proposition(&mut self) -> Expr {
-        let mut proposition = self.unary();
+    fn expression(&mut self) -> Expr {
+        let mut expression = self.unary();
 
         let mut start_idx = self.idx;
 
         while self.match_tokens(&[Token::And, Token::Or, Token::IfOnlyIf, Token::IfThen]) {
-            if proposition == Expr::Null {
+            if expression.is_null() {
                 self.error(
-                    "missing proposition on left side of operation",
+                    "missing expression on left side of operation",
                     SyntaxError,
                     start_idx,
                 );
@@ -82,9 +79,9 @@ impl Parser {
 
             let operator = self.previous_owned();
 
-            let mut rigth = self.unary();
+            let mut right = self.unary();
 
-            if rigth == Expr::Null {
+            if right.is_null() {
                 if is_operator_token(self.peek()) {
                     self.error("operators are next to each other", SyntaxError, self.idx);
                     continue;
@@ -101,10 +98,10 @@ impl Parser {
 
                 if self.match_token(&Token::Invalid) {
                     self.error = true;
-                    rigth = self.unary();
+                    right = self.unary();  // right
                 } else {
                     self.error(
-                        "missing proposition on right side of operation",
+                        "missing expression on right side of operation",
                         SyntaxError,
                         start_idx,
                     );
@@ -112,17 +109,17 @@ impl Parser {
                 }
             }
 
-            proposition = Expr::Binary(Box::new(proposition), operator, Box::new(rigth))
+            expression = Expr::binary(expression, operator, right);
         }
 
         if is_literal_value_token(self.peek()) {
             self.error = true;
-            proposition = self.proposition();
+            expression = self.expression();
         }
 
         if self.match_token(&Token::Invalid) || self.peek() == &Token::LeftParen {
             self.error = true;
-            proposition = self.proposition();
+            expression = self.expression();
         }
 
         if self.peek() == &Token::Not {
@@ -133,7 +130,7 @@ impl Parser {
             );
         }
 
-        proposition
+        expression
     }
 
     fn unary(&mut self) -> Expr {
@@ -141,14 +138,14 @@ impl Parser {
 
         if self.match_token(&Token::Not) {
             let right = self.unary();
-            if right == Expr::Null {
+            if right.is_null() {
                 self.error(
-                    "missing proposition on right side of negation",
+                    "missing expression on right side of negation",
                     SyntaxError,
                     start_idx,
                 );
             }
-            return Expr::Unary(Token::Not, Box::new(right));
+            return Expr::unary(Token::Not, right);
         }
 
         self.primary()
@@ -163,7 +160,7 @@ impl Parser {
             }
             if is_literal_value_token(self.peek()) {
                 self.error(
-                    "simple proposition is in an invalid position",
+                    "simple expression is in an invalid position",
                     SyntaxError,
                     self.idx,
                 );
@@ -172,7 +169,7 @@ impl Parser {
 
         if self.match_token(&Token::LeftParen) {
             self.open_parenthesis += 1;
-            let proposition = self.proposition();
+            let expression = self.expression();
             if self.open_parenthesis > 0 {
                 if self.match_token(&Token::RightParen) {
                     self.open_parenthesis -= 1;
@@ -180,14 +177,14 @@ impl Parser {
                     self.error("expected closing parenthesis", SyntaxError, self.idx);
                 }
             }
-            if proposition == Expr::Null {
-                self.error("not a proposition", ParseError, start_idx);
+            if expression == Expr::Null {
+                self.error("not an expression", ParseError, start_idx);
             }
-            return Expr::Grouping(Box::new(proposition));
+            return Expr::grouping(expression);
         }
 
         if is_literal_value_token(self.peek()) {
-            return Expr::Literal(self.advance_owned());
+            return Expr::literal(self.advance_owned());
         }
 
         if self.peek() == &Token::RightParen && self.open_parenthesis == 0 {
@@ -198,7 +195,7 @@ impl Parser {
             );
         }
 
-        Expr::Null
+        Expr::null()
     }
 
     // Help
@@ -208,6 +205,9 @@ impl Parser {
     }
 
     fn match_token(&mut self, token: &Token) -> bool {
+        while self.peek() == &Token::Space || self.peek() == &Token::Tab {
+            self.advance();
+        }
         if self.peek() == token {
             self.advance();
             return true;
@@ -285,17 +285,13 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        if self.is_at_end() {
-            return &Token::Null;
-        }
+        if self.is_at_end() { return &Token::Null }
         self.idx += 1;
         &self.tokens[self.idx - 1]
     }
 
     fn advance_owned(&mut self) -> Token {
-        if self.is_at_end() {
-            return Token::Null;
-        }
+        if self.is_at_end() { return Token::Null }
         self.idx += 1;
         self.tokens[self.idx - 1].clone()
     }

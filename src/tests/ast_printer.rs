@@ -3,7 +3,7 @@
 use crate::grammar::Expr;
 use crate::token::Token;
 
-pub fn print_ast(expr: &Box<Expr>) -> String {
+pub fn print_ast(expr: &Expr) -> String {
     as_str(expr)
 }
 
@@ -23,8 +23,8 @@ fn parenthezise(name: char, exprs: [Option<&Box<Expr>>; 2]) -> String {
     s
 }
 
-fn as_str(expr: &Box<Expr>) -> String {
-    match &**expr {
+fn as_str(expr: &Expr) -> String {
+    match expr {
         Expr::Literal(value) => literal(value),
         Expr::Grouping(expr) => grouping(expr),
         Expr::Binary(left, op, right) => binary(left, op, right),

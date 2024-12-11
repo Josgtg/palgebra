@@ -1,14 +1,13 @@
 #[cfg(test)]
 
 mod tests {
-    use crate::grammar::Expr;
     use crate::parser::parse;
     use crate::scanner::scan;
-    use crate::tests::ast_printer::print_ast;
+    use crate::structs::Expression;
     use crate::token::Token;
 
-    fn debug(expr: Box<Expr>) {
-        println!("{:?}", print_ast(&expr));
+    fn debug(expr: Expression) {
+        println!("{}", expr);
     }
 
     fn assert_ok(proposition: &str) {

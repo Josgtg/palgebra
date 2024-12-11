@@ -42,6 +42,11 @@ impl Scanner {
                 continue;
             }
             if ignore(self.peek()) {
+                if self.peek() == ' ' {
+                    self.tokens.push(Token::Space);
+                } else if self.peek() == '\t' {
+                    self.tokens.push(Token::Tab);
+                }
                 self.idx += 1;
                 continue;
             }

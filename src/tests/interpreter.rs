@@ -4,15 +4,14 @@ mod tests {
     use crate::interpreter::interpret;
     use crate::parser::parse;
     use crate::scanner::scan;
-    use crate::tests::ast_printer::print_ast;
 
     fn test(proposition: &str, goal: bool) {
         println!("{}", proposition);
         let tokens = scan(proposition, 1).unwrap();
         println!("{:?}", tokens);
         let expr = parse(tokens, 1);
-        println!("{}", print_ast(expr.as_ref().unwrap()));
-        let res = interpret(expr.as_deref().unwrap());
+        println!("{}", expr.as_ref().unwrap());
+        let res = interpret(&expr.unwrap());
 
         assert_eq!(res, goal);
     }

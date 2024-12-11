@@ -17,6 +17,7 @@ use clap::Parser;
 use cli::Cli;
 use possible::*;
 use services::reader;
+use structs::Expression;
 use token::Token;
 
 fn main() {
@@ -30,11 +31,11 @@ fn main() {
 
 fn interactive() {
     let mut err: bool;
-    let mut expr: Box<grammar::Expr>;
+    let mut expr: Expression;
     let mut variant_num: usize;
     let mut possible: String;
     let mut proposition: String;
-    let mut tokens: Vec<token::Token>;
+    let mut tokens: Vec<Token>;
     let mut i: usize = 1;
 
     loop {
@@ -49,7 +50,7 @@ fn interactive() {
             // clear screen and place the cursor in row 1 col 1
             print!("{esc}c{esc}[1;1H", esc = 27 as char);
         }
-
+        
         let res_scan_tokens = scanner::scan(&proposition, i as u32);
         if res_scan_tokens.is_err() {
             err = true;
@@ -58,24 +59,29 @@ fn interactive() {
             tokens = res_scan_tokens.unwrap();
         }
 
+        println!("{:?}", tokens);
+        
         if tokens[tokens.len() - 1] == Token::Comment {
             tokens.pop();
             if tokens.len() == 0 {
                 continue;
             }
         }
-
-        if parser::parse(tokens.clone(), i as u32).is_err() {
+        
+        let expres = parser::parse(tokens.clone(), i as u32);
+        if expres.is_err() {
             continue;
         }
         if err {
             continue;
         }
-
+        println!("{}", expres.unwrap());
+        
         variant_num = 0;
         let (t, values) = replace_literals(&mut tokens, true);
         for variant in t {
             expr = parser::parse(variant, i as u32).unwrap();
+            
             possible = print_possible(&values, variant_num);
             if !possible.is_empty() {
                 println!("{}", possible);
@@ -89,7 +95,7 @@ fn interactive() {
 
 fn from_file(path: PathBuf) {
     let mut err: bool;
-    let mut expr: Box<grammar::Expr>;
+    let mut expr: Expression;
     let mut possible: String;
     let mut variant_num: usize;
     let mut scan_tokens: Vec<token::Token>;
