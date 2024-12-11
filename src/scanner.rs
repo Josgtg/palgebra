@@ -1,6 +1,5 @@
 use crate::token::Token;
-use crate::errors;
-
+use crate::errors::{self, Error::SyntaxError};
 
 pub fn scan(proposition: &str, line: u32) -> Result<Vec<Token>, Vec<Token>> {
     let mut scanner = Scanner::new(line);
@@ -90,7 +89,7 @@ impl Scanner {
             _ => {
                 if !self.previous().is_alphabetic() {
                     self.error = true;
-                    errors::report(&format!("unexpected character \"{}\"", self.previous()), 0, self.line, self.col - 1);
+                    errors::scanner(&format!("unexpected character \"{}\"", self.previous()), SyntaxError, self.line, self.col - 1);
                     self.tokens.push(Token::Invalid);
                     return
                 }

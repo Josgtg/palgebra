@@ -5,14 +5,15 @@ mod parser;
 mod token;
 mod errors;
 mod grammar;
-mod utils;
+mod services;
 mod possible;
 mod cli;
+mod constants;
 
 use std::path::PathBuf;
 
 use clap::Parser;
-use utils::*;
+use services::reader;
 use possible::*;
 use token::Token;
 use cli::Cli;
@@ -37,7 +38,7 @@ fn interactive() {
 
     loop {
         err = false;
-        proposition = read_expression_from_user();
+        proposition = reader::read_expression_from_user();
 
         if proposition.is_empty() { continue }
         else if proposition.eq("exit") { return }
@@ -68,7 +69,7 @@ fn interactive() {
             expr = parser::parse(variant, i as u32).unwrap();
             possible = print_possible(&values, variant_num);
             if !possible.is_empty() { println!("{}", possible); }
-            colorize(interpreter::interpret(*expr));
+            services::format::colorize(interpreter::interpret(*expr));
             variant_num += 1;
         }
         i += 1;
@@ -82,9 +83,9 @@ fn from_file(path: PathBuf) {
     let mut variant_num: usize;
     let mut scan_tokens: Vec<token::Token>;
 
-    let whole_proposition = utils::read_expression_from_file(path);
+    let whole_proposition = reader::read_expression_from_file(path);
     
-    let divided = divide_proposition(whole_proposition);
+    let divided = services::divider::divide_proposition(whole_proposition);
 
     for (i, proposition) in divided.into_iter().enumerate() {
         println!("Proposition: {}", &proposition);
@@ -105,7 +106,7 @@ fn from_file(path: PathBuf) {
             expr = parser::parse(variant, (i + 1) as u32).unwrap();
             possible = print_possible(&values, variant_num);
             if !possible.is_empty() { println!("{}\x1b[0m", possible); }
-            colorize(interpreter::interpret(*expr));
+            services::format::colorize(interpreter::interpret(*expr));
             variant_num += 1;
         }
         println!();
@@ -145,7 +146,7 @@ fn _test(proposition: &str) {
         println!("{}", variant_num);
         if let Ok(expr) = parser::parse(variant, 1) {
             println!("{}", print_possible(&values, variant_num));
-            colorize(interpreter::interpret(*expr));
+            services::format::colorize(interpreter::interpret(*expr));
         }
         variant_num += 1;
     }

@@ -28,7 +28,18 @@ pub fn replace_literals(tokens: &mut Vec<Token>, close: bool) -> (Vec<Vec<Token>
         if let Token::Sentence(_) = t { counter += 1; }
     }
     if counter > 10 {
-        errors::fatal("too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)", 3, 1, !close);
+        if close {
+            errors::fatal(
+                "too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)",
+                errors::Error::VarAmountError,
+                errors::codes::RUNTIME_ERROR
+            );
+        } else {
+            errors::warn(
+                "too many variables (more than 2048 or 2^11 lines would be printed), please replace some of the variables for literal values (true or false)",
+                errors::Error::VarAmountError
+            );
+        }
         return (Vec::new(), None)
     }
 
