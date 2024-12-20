@@ -4,21 +4,21 @@ mod errors;
 mod grammar;
 mod interpreter;
 mod parser;
-mod possible;
 mod scanner;
 mod services;
 mod tests;
 mod token;
 mod types;
+mod simplifier;
 
 use std::path::PathBuf;
 
 use clap::Parser;
 use cli::Cli;
+use errors::codes;
 use grammar::Expr;
-use possible::*;
 use services::reader;
-use token::Token;
+use types::TokenSequence;
 
 fn main() {
     let args = Cli::parse();
@@ -30,152 +30,62 @@ fn main() {
 }
 
 fn interactive() {
-    let mut err: bool;
-    let mut expr: Expr;
-    let mut variant_num: usize;
-    let mut possible: String;
-    let mut proposition: String;
-    let mut tokens: Vec<Token>;
-    let mut i: usize = 1;
+    let mut line: u32 = 1;
+    let mut input: String;
+    let mut tokens: TokenSequence;
+    let mut expression: Expr;
 
     loop {
-        err = false;
-        proposition = reader::read_expression_from_user();
-
-        if proposition.is_empty() {
+        input = reader::read_expression_from_user();
+        if input.is_empty() {
+            line += 1;
             continue;
-        } else if proposition.eq("exit") {
+        } else if input.eq("exit") {
             return;
-        } else if proposition.eq("cls") || proposition.eq("clear") {
-            // clear screen and place the cursor in row 1 col 1
-            print!("{esc}c{esc}[1;1H", esc = 27 as char);
         }
 
-        let res_scan_tokens = scanner::scan(&proposition, i as u32);
-        if res_scan_tokens.is_err() {
-            err = true;
-            tokens = res_scan_tokens.unwrap_err();
+        if let Ok(t) = scanner::scan(&input, line) {
+            tokens = t;
         } else {
-            tokens = res_scan_tokens.unwrap();
-        }
-
-        if tokens[tokens.len() - 1] == Token::Comment {
-            tokens.pop();
-            if tokens.is_empty() {
-                continue;
-            }
-        }
-
-        if parser::parse(tokens.clone(), i as u32).is_err() {
+            errors::warn("proposition is not readable", errors::Error::InvalidProposition);
             continue;
         }
-        if err {
+        
+        if let Ok(e) = parser::parse(tokens, line) {
+            expression = simplifier::simplify(e);
+        } else {
+            errors::warn("proposition is not well formed", errors::Error::InvalidLogic);
             continue;
         }
 
-        variant_num = 0;
-        let (t, values) = replace_literals(&mut tokens, true);
-        for variant in t {
-            expr = parser::parse(variant, i as u32).unwrap();
+        println!("{}", expression);
 
-            possible = print_possible(&values, variant_num);
-            if !possible.is_empty() {
-                println!("{}", possible);
-            }
-            services::format::print_colored_bool(interpreter::interpret(&expr));
-            variant_num += 1;
-        }
-        i += 1;
+        line += 1;
     }
 }
+
 
 fn from_file(path: PathBuf) {
-    let mut err: bool;
-    let mut expr: Expr;
-    let mut possible: String;
-    let mut variant_num: usize;
-    let mut scan_tokens: Vec<token::Token>;
+    let line: u32 = 1;
+    let input: String;
+    let tokens: TokenSequence;
+    let expression: Expr;
 
-    let whole_proposition = reader::read_expression_from_file(path);
+    input = reader::read_expression_from_file(path);
 
-    let divided = services::divider::divide_proposition(whole_proposition);
-
-    for (i, proposition) in divided.into_iter().enumerate() {
-        println!("Proposition: {}", &proposition);
-        err = false;
-        let res_scan_tokens = scanner::scan(&proposition, 1);
-        if res_scan_tokens.is_err() {
-            err = true;
-            scan_tokens = res_scan_tokens.unwrap_err();
-        } else {
-            scan_tokens = res_scan_tokens.unwrap();
-        }
-        if parser::parse(scan_tokens.clone(), (i + 1) as u32).is_err() {
-            println!();
-            continue;
-        }
-        if err {
-            continue;
-        }
-
-        let (t, values) = replace_literals(&mut scan_tokens, false);
-        variant_num = 0;
-        for variant in t {
-            expr = parser::parse(variant, (i + 1) as u32).unwrap();
-            possible = print_possible(&values, variant_num);
-            if !possible.is_empty() {
-                println!("{}\x1b[0m", possible);
-            }
-            services::format::print_colored_bool(interpreter::interpret(&expr));
-            variant_num += 1;
-        }
-        println!();
-    }
-}
-
-fn _test(proposition: &str) {
-    let mut err: bool;
-    let mut variant_num: usize;
-    let mut tokens: Vec<token::Token>;
-    err = false;
-
-    if proposition.is_empty() || proposition.eq("exit") {
-        return;
-    }
-
-    let res_scan_tokens = scanner::scan(proposition, 1);
-    if res_scan_tokens.is_err() {
-        err = true;
-        tokens = res_scan_tokens.unwrap_err();
+    if let Ok(t) = scanner::scan(&input, line) {
+        tokens = t;
     } else {
-        tokens = res_scan_tokens.unwrap();
-    }
-
-    if tokens[tokens.len() - 1] == Token::Comment {
-        tokens.pop();
-        if tokens.is_empty() {
-            return;
-        }
-    }
-
-    if parser::parse(tokens.clone(), 1).is_err() {
+        errors::fatal("proposition is not readable", errors::Error::InvalidProposition, codes::RUNTIME_ERROR);
         return;
     }
-    if err {
+    
+    if let Ok(e) = parser::parse(tokens, line) {
+        expression = simplifier::simplify(e);
+    } else {
+        errors::fatal("proposition is not well formed", errors::Error::InvalidLogic, codes::RUNTIME_ERROR);
         return;
     }
 
-    variant_num = 0;
-    let (t, values) = replace_literals(&mut tokens, false);
-    for tt in &t {
-        println!("{:?}", tt);
-    }
-    for variant in t {
-        println!("{}", variant_num);
-        if let Ok(expr) = parser::parse(variant, 1) {
-            println!("{}", print_possible(&values, variant_num));
-            services::format::print_colored_bool(interpreter::interpret(&expr));
-        }
-        variant_num += 1;
-    }
+    println!("{}", expression);
 }

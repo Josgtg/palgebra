@@ -5,11 +5,15 @@ use std::path::PathBuf;
 use crate::errors::{self, codes, Error};
 
 pub fn read_expression_from_file(path: PathBuf) -> String {
-    let proposition = fs::read_to_string(path);
-    if let Ok(s) = proposition {
-        return s;
-    }
-    errors::fatal("file could not be read", Error::File, codes::FILE_ERROR);
+    match fs::read_to_string(path) { 
+        Ok(s) => return s,
+        Err(e) => errors::fatal_detailed(
+            "file could not be read",
+            Error::File,
+            codes::FILE_ERROR,
+            e
+        )
+    };
     String::new()
 }
 

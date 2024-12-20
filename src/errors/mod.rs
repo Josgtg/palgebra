@@ -8,6 +8,8 @@ pub enum Error {
     Parse,
     File,
     VarAmount,
+    InvalidProposition,
+    InvalidLogic,
 }
 
 impl Display for Error {
@@ -17,6 +19,8 @@ impl Display for Error {
             Error::Parse => "ParseError",
             Error::File => "FileError",
             Error::VarAmount => "VarAmountError",
+            Error::InvalidProposition => "InvalidPropositionError",
+            Error::InvalidLogic => "InvalidLogicError"
         })
     }
 }
@@ -30,6 +34,11 @@ pub fn scanner(message: &str, kind: Error, line: u32, col: u32) {
 
 pub fn warn(message: &str, kind: Error) {
     eprintln!("{}{}: {}{}", BRIGHT_YELLOW, kind, message, RESET);
+}
+
+pub fn fatal_detailed(message: &str, kind: Error, exit_code: i32, error: impl std::error::Error) {
+    eprintln!("{}{}: {}\n{}{}", BRIGHT_YELLOW, kind, message, error, RESET);
+    std::process::exit(exit_code);
 }
 
 pub fn fatal(message: &str, kind: Error, exit_code: i32) {

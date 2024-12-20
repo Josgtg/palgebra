@@ -13,7 +13,13 @@ pub fn interpret(expr: &Expr) -> bool {
 }
 
 fn literal(t: &Token) -> bool {
-    t == &Token::True
+    if t == &Token::True {
+        true
+    } else if t == &Token::False {
+        false
+    } else {
+        panic!("expression provided to interpreter has undefined literals");
+    }
 }
 
 fn binary(left: &Expr, op: &Token, right: &Expr) -> bool {
