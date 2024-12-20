@@ -82,7 +82,7 @@ fn interactive() {
             if !possible.is_empty() {
                 println!("{}", possible);
             }
-            services::format::colorize(interpreter::interpret(&expr));
+            services::format::print_colored_bool(interpreter::interpret(&expr));
             variant_num += 1;
         }
         i += 1;
@@ -126,7 +126,7 @@ fn from_file(path: PathBuf) {
             if !possible.is_empty() {
                 println!("{}\x1b[0m", possible);
             }
-            services::format::colorize(interpreter::interpret(&expr));
+            services::format::print_colored_bool(interpreter::interpret(&expr));
             variant_num += 1;
         }
         println!();
@@ -174,7 +174,7 @@ fn _test(proposition: &str) {
         println!("{}", variant_num);
         if let Ok(expr) = parser::parse(variant, 1) {
             println!("{}", print_possible(&values, variant_num));
-            services::format::colorize(interpreter::interpret(&expr));
+            services::format::print_colored_bool(interpreter::interpret(&expr));
         }
         variant_num += 1;
     }

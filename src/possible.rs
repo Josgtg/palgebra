@@ -1,18 +1,16 @@
 use crate::errors;
+use crate::services::format::colored_bool;
 use crate::token::Token;
 use crate::types::*;
+use crate::constants::ansi_codes::*;
 
-pub fn print_possible(values: &Option<Vec<LiteralAndBool>>, idx: usize) -> String {
+pub fn print_possible(values: &Vec<LiteralAndBool>, idx: usize) -> String {
     let mut message = String::new();
-    let mut colored: &str;
-    if let Some(vv) = values {
-        for v in &vv[idx] {
-            if v.1 {
-                colored = "\x1b[92mtrue \x1b[0m";
-            } else {
-                colored = "\x1b[91mfalse\x1b[0m";
-            }
-            message.push_str(&format!("{}: {} \x1b[2m|\x1b[0m ", v.0, colored))
+    let mut colored: String;
+    if !values.is_empty() {
+        for v in &values[idx] {
+            colored = colored_bool(v.1);
+            message.push_str(&format!("{}{}: {} |{} ", GRAY, v.0, colored, RESET))
         }
         // removing the trailing " |", for some reason, since it's colored it takes 16 characters
         return String::from(&message[0..(message.len() - 15)]);
@@ -23,7 +21,7 @@ pub fn print_possible(values: &Option<Vec<LiteralAndBool>>, idx: usize) -> Strin
 pub fn replace_literals(
     tokens: &mut TokenSequence,
     close: bool,
-) -> (Vec<TokenSequence>, Option<Vec<LiteralAndBool>>) {
+) -> (Vec<TokenSequence>, Vec<LiteralAndBool>) {
     // Returns a vec with all possible values for every variable and another vec with those values
     // p & q -> [[True, And, True], [True, And, False], [False, And, True], [False, And, False]]
     //          [[(p, true), (q, true)], [(p, true), (q, false)], [(p, false), (q, true)] [...]]
@@ -46,13 +44,13 @@ pub fn replace_literals(
                 errors::Error::VarAmount
             );
         }
-        return (Vec::new(), None);
+        return (Vec::new(), Vec::new());
     }
 
     if let Some(list) = transfrom_literals(tokens, &mut Vec::new()) {
-        (list.0, Some(list.1))
+        (list.0, list.1)
     } else {
-        (vec![tokens.clone()], None)
+        (vec![tokens.clone()], Vec::new())
     }
 }
 

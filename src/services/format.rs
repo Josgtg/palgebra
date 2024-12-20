@@ -3,18 +3,20 @@
 use crate::constants::ansi_codes::*;
 use crate::types::TokenSequence;
 
-pub fn colorize(b: bool) {
-    if b {
-        println!("{}{}{}", BRIGHT_GREEN, b, RESET);
-    } else {
-        println!("{}{}{}", BRIGHT_RED, b, RESET);
-    }
+pub fn colored_bool(b: bool) -> String {
+    let color: &str;
+    if b { color = BRIGHT_GREEN }
+    else { color = BRIGHT_RED }
+    format!("{}{}{}", color, b, RESET)
+}
+
+pub fn print_colored_bool(b: bool) {
+    let color: &str;
+    if b { color = BRIGHT_GREEN }
+    else { color = BRIGHT_RED }
+    println!("{}{}{}", color, b, RESET);
 }
 
 pub fn format_tokens(tokens: TokenSequence) -> String {
-    let mut s: String = String::new();
-    for token in tokens.iter() {
-        s.push(token.as_char());
-    }
-    s
+    tokens.iter().map(|t| t.as_char()).collect()
 }
