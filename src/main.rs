@@ -51,6 +51,7 @@ fn interactive() {
             continue;
         }
         
+        
         if let Ok(e) = parser::parse(tokens, line) {
             expression = simplifier::simplify(e);
         } else {

@@ -10,7 +10,7 @@ mod tests {
         let tokens = scan(proposition, 1).unwrap();
         println!("{:?}", tokens);
         let expr = parse(tokens, 1);
-        println!("{}", expr.as_ref().unwrap());
+        println!("{:?}", expr.as_ref().unwrap());
         let res = interpret(&expr.unwrap());
 
         assert_eq!(res, goal);

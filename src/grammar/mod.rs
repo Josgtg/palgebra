@@ -1,9 +1,13 @@
 #![allow(warnings)]
 
-use std::fmt::Display;
+mod expr_formatter;
+
+use std::fmt::{Debug, Display};
 
 use crate::tests::ast_printer;
 use crate::token::Token;
+
+use expr_formatter::format_expression;
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum Expr {
@@ -46,6 +50,12 @@ impl Expr {
 }
 
 impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {        
+        f.write_str(&format_expression(self))
+    }
+}
+
+impl Debug for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&ast_printer::print_ast(self))
     }

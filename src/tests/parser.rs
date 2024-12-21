@@ -7,7 +7,7 @@ mod tests {
     use crate::types::TokenSequence;
 
     fn debug(expr: &Expr) {
-        println!("{}", expr);
+        println!("{:?}", expr);
     }
 
     fn assert_ok(proposition: &str) {

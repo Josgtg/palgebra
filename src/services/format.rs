@@ -17,6 +17,6 @@ pub fn print_colored_bool(b: bool) {
     println!("{}{}{}", color, b, RESET);
 }
 
-pub fn format_tokens(tokens: TokenSequence) -> String {
+pub fn format_tokens(tokens: &TokenSequence) -> String {
     tokens.iter().map(|t| t.as_char()).collect()
 }
