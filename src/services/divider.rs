@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 fn strip_return(s: &str) -> String {
     String::from(match s.strip_suffix('\r') {
         Some(o) => o,

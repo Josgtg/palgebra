@@ -7,7 +7,7 @@ pub enum Error {
     Syntax,
     Parse,
     File,
-    VarAmount,
+    // VarAmount,
     InvalidProposition,
     InvalidLogic,
 }
@@ -18,7 +18,7 @@ impl Display for Error {
             Error::Syntax => "SyntaxError",
             Error::Parse => "ParseError",
             Error::File => "FileError",
-            Error::VarAmount => "VarAmountError",
+            // Error::VarAmount => "VarAmountError",
             Error::InvalidProposition => "InvalidPropositionError",
             Error::InvalidLogic => "InvalidLogicError"
         })

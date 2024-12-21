@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use crate::grammar::Expr;
 use crate::token::Token;
 

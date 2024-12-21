@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub const RESET: &str = "\x1b[0m";
 pub const GRAY: &str = "\x1b[2m";
 pub const BRIGHT_GREEN: &str = "\x1b[92m";
