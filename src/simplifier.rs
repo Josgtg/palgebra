@@ -5,6 +5,9 @@ pub fn simplify(expression: Expr) -> Expr {
     rule_recursion(expression)    
 }
 
+// FIXME: Does not simplify (q | p) & p, for example, as the program doesn't recognize it's the same as p & (p | q), which is the form it checks.
+// FIXME: Does not simplify (p) | ((p) & q) as the program confuses with the agrupations.
+
 fn rule_recursion(expression: Expr) -> Expr {
     let simplified: Expr = match expression {
         Expr::Binary(left,op , right) => Expr::binary(rule_recursion(*left), op, rule_recursion(*right)),
@@ -34,9 +37,15 @@ fn absorbtion(expression: Expr) -> (Expr, bool) {
     let original = expression.clone();  // Must avoid cloning the value in future implementations
     match expression {
         // p | (!p & q) => p | q
-        Expr::Binary(left, operator, r) => {
+        Expr::Binary(l, operator, r) => {
+            let left: Expr;
             let right: Expr;
             let mut unary = false;
+            if let Expr::Grouping(e) = *l {
+                left = *e;
+            } else {
+                left = *l;
+            }
             if let Expr::Grouping(e) = *r {
                 right = *e;
             } else {
@@ -56,7 +65,7 @@ fn absorbtion(expression: Expr) -> (Expr, bool) {
                     unary = true;
                 }
 
-                if left != leftr && left != rightr {
+                if left != *leftr && left != *rightr {
                     return (original, false);
                 } else if (operator != Token::And && operator != Token::Or) || (operatorr != Token::Or && operatorr != Token::And) {
                     return (original, false);
@@ -65,9 +74,9 @@ fn absorbtion(expression: Expr) -> (Expr, bool) {
                 }
 
                 if unary {
-                    return (Expr::binary(*left, operator, *rightr), true);
+                    return (Expr::binary(left, operator, *rightr), true);
                 } else {
-                    return (*left, true);
+                    return (left, true);
                 }
             }
             return (original, false);
