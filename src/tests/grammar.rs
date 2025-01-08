@@ -28,7 +28,7 @@ mod tests {
     }
 
     #[test]
-    fn same_binary() {
+    fn same_binary_basic() {
         let left = generate_expression("p & q");
         let right = generate_expression("q & p");
         println!("{} == {}", &left.unparenthesized(), &right);
@@ -47,11 +47,11 @@ mod tests {
 
     #[test]
     fn same_binary_chain() {
-        // FIXME: Does not evaluate as the same, I don't really know if it should be considered as it
-        let _left = generate_expression("(p & (p & q & r & s))");
-        let _right = generate_expression("p & (p & q & r & s)");
-        let left = generate_expression("p & (q & s)");
-        let right = generate_expression("p & q & s");
+        // FIXME: Does not evaluate as the same (It's hard 😢, implementation is pending)
+        let _left = generate_expression("p & (s & q)");
+        let _right = generate_expression("p & q & s");
+        let left = generate_expression("(p & (p & q & r & s))");
+        let right = generate_expression("p & (p & q & r & s)");
         println!("{} == {}", &left.unparenthesized(), &right);
         println!("{:?} == {:?}", &left.unparenthesized(), &right);
         assert!(left.is_same(&right))

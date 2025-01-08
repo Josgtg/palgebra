@@ -1,7 +1,7 @@
 use super::Expr;
 use crate::token::Token;
 
-pub fn format_expression(expression: &Expr) -> String {
+pub(super) fn format_expression(expression: &Expr) -> String {
     as_str(expression)
 }
 
