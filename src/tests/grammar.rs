@@ -65,4 +65,13 @@ mod tests {
         println!("{:?} == {:?}", &left.unparenthesized(), &right);
         assert!(left.is_same(&right))
     }
+
+    #[test]
+    fn parenthesis_in_binary() {
+        let left = generate_expression("(((p & q) | s))");
+        let right = generate_expression("(p & q) | s");
+        println!("{} == {}", &left.unparenthesized(), &right);
+        println!("{:?} == {:?}", &left.unparenthesized(), &right);
+        assert!(left.is_same(&right))
+    }
 }

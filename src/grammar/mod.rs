@@ -11,8 +11,7 @@ use crate::token::Token;
 
 use expr_formatter::format_expression;
 
-enum BinarySameOperator {
-    Both,
+pub enum BinarySide {
     Left,
     Right,
     None
@@ -38,7 +37,7 @@ impl Expr {
             (Expr::Unary(o1, e1), Expr::Unary(o2, e2)) => {
                 o1 == o2 && e1.is_same(&e2)
             }
-            _ => self.unparenthesized() == other.unparenthesized()
+            (s, o) => s.unparenthesized() == o.unparenthesized()
         }
     }
 
@@ -49,7 +48,7 @@ impl Expr {
             Expr::Grouping(e) => e.unparenthesized(),
             Expr::Binary(..) => Expr::unparenthesized_binary(self.clone()),
             Expr::Unary(o, e) => Expr::unary(o.clone(), e.unparenthesized()),
-            _ => self.clone()
+            default => default.clone()
         }
     }
 
@@ -71,6 +70,19 @@ impl Expr {
         } else {
             expression.unparenthesized()
         }
+    }
+
+    pub fn in_binary(&self, expression: &Expr) -> BinarySide {
+        if let Expr::Binary(left, _, right) = self {
+            return if left.is_same(expression) {
+                BinarySide::Left
+            } else if right.is_same(expression) {
+                BinarySide::Right
+            } else {
+                BinarySide::None
+            };
+        }
+        BinarySide::None
     }
 }
 
@@ -100,7 +112,7 @@ impl Expr {
     }
 
     pub fn is_null(&self) -> bool {
-        self == &Expr::Null
+        self.is_same(&Expr::Null)
     }
 }
 

@@ -13,27 +13,25 @@ fn rule_recursion(expression: Expr) -> Expr {
         Expr::Binary(left,op , right) => Expr::binary(rule_recursion(*left), op, rule_recursion(*right)),
         Expr::Unary(op, right) => Expr::unary(op, rule_recursion(*right)),
         Expr::Grouping(expr) => Expr::grouping(rule_recursion(*expr)),
-        Expr::Literal(t) => Expr::Literal(t),
-        Expr::Operation(t) => Expr::Operation(t),
-        Expr::Null => Expr::Null,
+        _default => _default
     };
     apply_rule(simplified)
 }
 
 fn apply_rule(expression: Expr) -> Expr {
     let mut simplified: Expr = expression;
-    let mut absorbtion_applied = true;
+    let mut absorption_applied = true;
     let mut conditional_applied = true;
     let mut biconditional_applied = true;
-    while absorbtion_applied || conditional_applied || biconditional_applied {
-        (simplified, absorbtion_applied) = absorbtion(simplified);
+    while absorption_applied || conditional_applied || biconditional_applied {
+        (simplified, absorption_applied) = absorption(simplified);
         (simplified, conditional_applied) = conditional(simplified);
         (simplified, biconditional_applied) = biconditional(simplified);
     }
     simplified
 }
 
-fn absorbtion(expression: Expr) -> (Expr, bool) {
+fn absorption(expression: Expr) -> (Expr, bool) {
     let original = expression.clone();  // Must avoid cloning the value in future implementations
     match expression {
         // p | (!p & q) => p | q
@@ -82,7 +80,7 @@ fn absorbtion(expression: Expr) -> (Expr, bool) {
             return (original, false);
         }
         Expr::Grouping(e) => {
-            let (expression, applied) = absorbtion(*e);
+            let (expression, applied) = absorption(*e);
             return (Expr::grouping(expression), applied);
         }
         _ => (original, false)
@@ -90,17 +88,19 @@ fn absorbtion(expression: Expr) -> (Expr, bool) {
 }
 
 fn conditional(expression: Expr) -> (Expr, bool) {
+    let mut rule_applied = false;
     if let Expr::Binary(left, operator, right) = expression {
-        if operator == Token::IfThen {
-            return (Expr::binary(Expr::unary(Token::Not, *left), Token::Or, *right), true);
+        return if operator == Token::IfThen {
+            rule_applied = true;
+            (Expr::binary(Expr::unary(Token::Not, *left), Token::Or, *right), rule_applied)
         } else {
-            return (Expr::binary(*left, operator, *right), false);
+            (Expr::binary(*left, operator, *right), rule_applied)
         }
     } else if let Expr::Grouping(e) = expression {
-        let (expr, applied) = conditional(*e);
-        return (Expr::grouping(expr), applied);
+        let (expr, rule_applied) = conditional(*e);
+        return (Expr::grouping(expr), rule_applied);
     }
-    (expression, false)
+    (expression, rule_applied)
 }
 
 fn biconditional(expression: Expr) -> (Expr, bool) {
