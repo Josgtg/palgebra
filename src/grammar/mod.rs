@@ -11,6 +11,7 @@ use crate::token::Token;
 
 use expr_formatter::format_expression;
 
+#[derive(PartialEq, Eq)]
 pub enum BinarySide {
     Left,
     Right,
@@ -73,16 +74,24 @@ impl Expr {
     }
 
     pub fn in_binary(&self, expression: &Expr) -> BinarySide {
-        if let Expr::Binary(left, _, right) = self {
-            return if left.is_same(expression) {
+        let slf = self.unparenthesized();
+        if let Expr::Binary(left, _, right) = expression.unparenthesized() {
+            return if left.is_same(&slf) {
                 BinarySide::Left
-            } else if right.is_same(expression) {
+            } else if right.is_same(&slf) {
                 BinarySide::Right
             } else {
                 BinarySide::None
             };
         }
         BinarySide::None
+    }
+
+    pub fn match_operator(&self, operator: &Token) -> bool {
+        match self {
+            Expr::Binary(_, o, _) | Expr::Unary(o, _) => operator == o,
+            _ => false
+        }
     }
 }
 

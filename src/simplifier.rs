@@ -1,4 +1,4 @@
-use crate::grammar::Expr;
+use crate::grammar::{BinarySide, Expr};
 use crate::token::Token;
     
 pub fn simplify(expression: Expr) -> Expr {
@@ -20,73 +20,98 @@ fn rule_recursion(expression: Expr) -> Expr {
 
 fn apply_rule(expression: Expr) -> Expr {
     let mut simplified: Expr = expression;
-    let mut absorption_applied = true;
-    let mut conditional_applied = true;
-    let mut biconditional_applied = true;
-    while absorption_applied || conditional_applied || biconditional_applied {
-        (simplified, absorption_applied) = absorption(simplified);
-        (simplified, conditional_applied) = conditional(simplified);
-        (simplified, biconditional_applied) = biconditional(simplified);
+    let mut first_rules: [bool;3];
+    let mut second_rules: [bool;2];
+    let mut expr_changed = true;
+    while expr_changed {
+        expr_changed = false;
+        first_rules = [true;3];
+        while first_rules.contains(&true) {
+            (simplified, first_rules[0]) = conditional(simplified);
+            (simplified, first_rules[1]) = biconditional(simplified);
+            (simplified, first_rules[2]) = absorption(simplified);
+            expr_changed = expr_changed || first_rules.contains(&true);
+        }
+        second_rules = [true;2];
+        while second_rules.contains(&true) {
+            (simplified, second_rules[0]) = idempotent(simplified);
+            (simplified, second_rules[1]) = compliments(simplified);
+            expr_changed = expr_changed || second_rules.contains(&true);
+        }
     }
     simplified
 }
 
+// p & (p | q) == p
+// q | (!q & p) == q | p
 fn absorption(expression: Expr) -> (Expr, bool) {
-    let original = expression.clone();  // Must avoid cloning the value in future implementations
-    match expression {
-        // p | (!p & q) => p | q
-        Expr::Binary(l, operator, r) => {
-            let left: Expr;
-            let right: Expr;
-            let mut unary = false;
-            if let Expr::Grouping(e) = *l {
-                left = *e;
-            } else {
-                left = *l;
-            }
-            if let Expr::Grouping(e) = *r {
-                right = *e;
-            } else {
-                right = *r;
-            }
-            
-            // p      |          (!p & q)
-            // left   operator   right
-            if let Expr::Binary(mut leftr, operatorr, rightr) = right {
-                // !p      &           q
-                // leftr   operatorr   rightr
-                
-                if let Expr::Unary(_, rightrl) = *leftr {
-                    // !   p
-                    // _   rightrl
-                    leftr = rightrl;
-                    unary = true;
-                }
+    let mut rule_applied: bool = false;
+    let opposite_op: Token;
+    
+    let (left, operator, right): (Expr, Token, Expr);
+    if let Expr::Binary(l, o, r) = expression.unparenthesized() {
+        opposite_op = if o == Token::And { Token::Or } else { Token::And };
+        left = l.unparenthesized();
+        operator = o;
+        right = r.unparenthesized();
+    } else {
+        return (expression, rule_applied);
+    }
 
-                if left != *leftr && left != *rightr {
-                    return (original, false);
-                } else if (operator != Token::And && operator != Token::Or) || (operatorr != Token::Or && operatorr != Token::And) {
-                    return (original, false);
-                } else if operator == operatorr {
-                    return (original, false);
-                }
-
-                if unary {
-                    return (Expr::binary(left, operator, *rightr), true);
-                } else {
-                    return (left, true);
-                }
+    return if right.match_operator(&opposite_op) {
+        if let Some((side, negated)) = check_absorption(&left, &right) {
+            rule_applied = true;
+            if negated {
+                let other: Expr = match (side, right) {
+                    (BinarySide::Left, Expr::Binary(.., right)) => *right,
+                    (BinarySide::Right, Expr::Binary(left, ..)) => *left,
+                    _ => panic!("should not have reached this part")
+                };
+                (Expr::binary(left, operator, other), rule_applied)
+            } else {
+                (left, rule_applied)
             }
-            return (original, false);
-        }
-        Expr::Grouping(e) => {
-            let (expression, applied) = absorption(*e);
-            return (Expr::grouping(expression), applied);
-        }
-        _ => (original, false)
+        } else { (expression, rule_applied) }
+    } else if left.match_operator(&opposite_op) {
+        if let Some((side, negated)) = check_absorption(&right, &left) {
+            rule_applied = true;
+            if negated {
+                let other: Expr = match (side, left) {
+                    (BinarySide::Left, Expr::Binary(.., right)) => *right,
+                    (BinarySide::Right, Expr::Binary(left, ..)) => *left,
+                    _ => panic!("should not have reached this part")
+                };
+                (Expr::binary(right, operator, other), rule_applied)
+            } else {
+                (right, rule_applied)
+            }
+        } else { (expression, rule_applied) }
+    } else {
+        (expression, rule_applied)
     }
 }
 
+/// Checks if "simple" is inside "to_absorb" in a way that meets the absorption rule.
+/// Returns those expressions if the rule is met,
+/// the side of the binary operation in "to_absorb" that "simple" appears in and a bool of wether or not it's the normal or the negated rule.
+fn check_absorption(simple: &Expr, to_absorb: &Expr) -> Option<(BinarySide, bool)> {
+    // First we check for p & (p | q), which is the "normal" absorption rule
+    let mut simple_in_to_abs = simple.in_binary(&to_absorb);
+    return if simple_in_to_abs != BinarySide::None {
+        Some((simple_in_to_abs, false))
+    } else {
+        // Then we check for p & (!p | q), which is the "negated" absorption rule
+        let simple = Expr::unary(Token::Not, simple.clone());
+        simple_in_to_abs = simple.in_binary(&to_absorb);
+        if simple_in_to_abs != BinarySide::None {
+                Some((simple_in_to_abs, true))
+        } else {
+            None 
+        }
+    }
+}
+
+// p > q == !p | q
 fn conditional(expression: Expr) -> (Expr, bool) {
     let mut rule_applied = false;
     if let Expr::Binary(left, operator, right) = expression {
@@ -103,6 +128,7 @@ fn conditional(expression: Expr) -> (Expr, bool) {
     (expression, rule_applied)
 }
 
+// p ~ q == (!p | q) & (!q | p)
 fn biconditional(expression: Expr) -> (Expr, bool) {
     if let Expr::Binary(left, operator, right) = expression {
         if operator == Token::IfOnlyIf {
@@ -129,5 +155,41 @@ fn biconditional(expression: Expr) -> (Expr, bool) {
         let (expr, applied) = conditional(*e);
         return (Expr::grouping(expr), applied);
     }
+    (expression, false)
+}
+
+// Next functions must be applied after the other ones have finished
+
+// FIXME: This function can be improved by checking all the combinations in an expression like (p & q) & (q & s) == p & q & s
+#[allow(unused_mut)]
+// p & p == p
+// q | q == q
+fn idempotent(expression: Expr) -> (Expr, bool) {
+    if let Expr::Binary(left, op, right) = expression.unparenthesized() {
+        if left.is_same(&right) {
+            return (*left, true);
+        } else {
+            // Original structure is something like (p & q) & q
+            // What I'm doing here is trying to simplify the right side (.. & q) & q if correct
+            if let Expr::Binary(l, op2, r) = left.unparenthesized() {
+                if op2 != op {
+                    return (expression, false);
+                }
+                let (mut expr, mut applied): (Expr, bool);
+                (expr, applied) = idempotent(Expr::binary(*r, op2, *right));
+                if applied {
+                    return (Expr::binary(*l, op, expr), true);
+                }
+            }
+        }
+    }
+    (expression, false)
+}
+
+// p | !p = T
+// q & !q = F
+#[allow(warnings)]
+pub fn compliments(expression: Expr) -> (Expr, bool) {
+    // TODO:
     (expression, false)
 }
